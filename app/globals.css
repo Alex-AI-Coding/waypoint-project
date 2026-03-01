@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
 
 :root {
   --background: #ffffff;
@@ -6,12 +7,12 @@
 
   /* Default reading prefs */
   font-size: 16px;
-  font-family: var(--font-geist-sans), system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  font-family: var(--font-geist-sans), system-ui, -apple-system, Segoe UI, Roboto,
+    Arial, sans-serif;
 }
 
-/* ✅ Add this */
 html.dark {
-  --background: #09090b;
+  --background: #09090b; /* near zinc-950 */
   --foreground: #fafafa;
 }
 
@@ -31,7 +32,7 @@ body {
 }
 
 /* -------------------------------
-   Animations (unchanged)
+   Animations
 -------------------------------- */
 
 @keyframes fade-in {
@@ -65,9 +66,15 @@ body {
 }
 
 @keyframes blink {
-  0% { opacity: 0.2; }
-  20% { opacity: 1; }
-  100% { opacity: 0.2; }
+  0% {
+    opacity: 0.2;
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.2;
+  }
 }
 
 .typing-dot {
@@ -85,18 +92,28 @@ body {
 /* -------------------------------
    Font size scaling
 -------------------------------- */
-:root[data-font-size="sm"] { font-size: 14px; }
-:root[data-font-size="md"] { font-size: 16px; }
-:root[data-font-size="lg"] { font-size: 18px; }
-:root[data-font-size="xl"] { font-size: 20px; }
+
+:root[data-font-size="sm"] {
+  font-size: 14px;
+}
+:root[data-font-size="md"] {
+  font-size: 16px;
+}
+:root[data-font-size="lg"] {
+  font-size: 18px;
+}
+:root[data-font-size="xl"] {
+  font-size: 20px;
+}
 
 /* -------------------------------
-   Font style switching (NOW uses loaded Next font variables)
+   Font style switching
 -------------------------------- */
 
 /* System */
 :root[data-font-style="system"] {
-  font-family: var(--font-geist-sans), system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  font-family: var(--font-geist-sans), system-ui, -apple-system, Segoe UI, Roboto,
+    Arial, sans-serif;
 }
 
 /* Lexend */
@@ -106,10 +123,17 @@ body {
 
 /* Atkinson Hyperlegible */
 :root[data-font-style="atkinson"] {
-  font-family: var(--font-atkinson), var(--font-geist-sans), system-ui, sans-serif;
+  font-family: var(--font-atkinson), var(--font-geist-sans), system-ui,
+    sans-serif;
 }
 
 /* Optional: make Tailwind's font-sans follow your selected style too */
-:root[data-font-style="system"]   { --font-sans: var(--font-geist-sans); }
-:root[data-font-style="lexend"]   { --font-sans: var(--font-lexend); }
-:root[data-font-style="atkinson"] { --font-sans: var(--font-atkinson); }
+:root[data-font-style="system"] {
+  --font-sans: var(--font-geist-sans);
+}
+:root[data-font-style="lexend"] {
+  --font-sans: var(--font-lexend);
+}
+:root[data-font-style="atkinson"] {
+  --font-sans: var(--font-atkinson);
+}
