@@ -1,0 +1,115 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+
+  /* Default reading prefs */
+  font-size: 16px;
+  font-family: var(--font-geist-sans), system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+}
+
+/* ✅ Add this */
+html.dark {
+  --background: #09090b;
+  --foreground: #fafafa;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  /* Tailwind hooks */
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  line-height: 1.6;
+}
+
+/* -------------------------------
+   Animations (unchanged)
+-------------------------------- */
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.4s ease-out forwards;
+}
+
+@keyframes message-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-message-in {
+  animation: message-in 0.22s ease-out forwards;
+}
+
+@keyframes blink {
+  0% { opacity: 0.2; }
+  20% { opacity: 1; }
+  100% { opacity: 0.2; }
+}
+
+.typing-dot {
+  animation: blink 1.4s infinite both;
+}
+
+.typing-dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.typing-dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+/* -------------------------------
+   Font size scaling
+-------------------------------- */
+:root[data-font-size="sm"] { font-size: 14px; }
+:root[data-font-size="md"] { font-size: 16px; }
+:root[data-font-size="lg"] { font-size: 18px; }
+:root[data-font-size="xl"] { font-size: 20px; }
+
+/* -------------------------------
+   Font style switching (NOW uses loaded Next font variables)
+-------------------------------- */
+
+/* System */
+:root[data-font-style="system"] {
+  font-family: var(--font-geist-sans), system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+}
+
+/* Lexend */
+:root[data-font-style="lexend"] {
+  font-family: var(--font-lexend), var(--font-geist-sans), system-ui, sans-serif;
+}
+
+/* Atkinson Hyperlegible */
+:root[data-font-style="atkinson"] {
+  font-family: var(--font-atkinson), var(--font-geist-sans), system-ui, sans-serif;
+}
+
+/* Optional: make Tailwind's font-sans follow your selected style too */
+:root[data-font-style="system"]   { --font-sans: var(--font-geist-sans); }
+:root[data-font-style="lexend"]   { --font-sans: var(--font-lexend); }
+:root[data-font-style="atkinson"] { --font-sans: var(--font-atkinson); }
