@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+
 import TextInput from "@/components/TextInput";
 import { PrimaryButton } from "@/components/Button";
 import DisclaimerBox from "@/components/DisclaimerBox";
@@ -27,10 +29,8 @@ export default function LoginForm() {
     }
 
     setIsLoading(true);
-
     try {
       const supabase = createClient();
-
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -51,78 +51,70 @@ export default function LoginForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-4 animate-fade-in">
+    <form onSubmit={onSubmit} className="space-y-4">
       {error && (
-        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div className="rounded-xl border border-red-300 bg-red-50/60 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-200">
           {error}
         </div>
       )}
 
-      {/* Email Field */}
-      <div className="space-y-2">
-        <label className="text-sm font-medium text-green-900">
-          Email
-        </label>
-        <TextInput
-          name="email"
-          type="email"
-          placeholder="you@example.com"
-        />
+      {/* Email */}
+      <div>
+        <label className="mb-1 block text-sm font-medium">Email</label>
+        <TextInput name="email" type="email" placeholder="you@example.com" />
       </div>
 
-      {/* Password Field with Show/Hide */}
-      <div className="space-y-2">
-        <label className="text-sm font-medium text-green-900">
-          Password
-        </label>
+      {/* Password */}
+      <div>
+        <label className="mb-1 block text-sm font-medium">Password</label>
 
         <div className="relative">
           <TextInput
             name="password"
             type={showPassword ? "text" : "password"}
-            placeholder="••••••••"
-            className="pr-12"
+            placeholder="Your password"
+            className="pr-20"
           />
 
           <button
             type="button"
-            onClick={() => setShowPassword((prev) => !prev)}
-            className="absolute inset-y-0 right-3 flex items-center text-xs font-medium text-green-700 hover:text-green-900 transition"
+            onClick={() => setShowPassword((v: boolean) => !v)}
+            className="absolute inset-y-0 right-3 my-auto h-8 rounded-lg px-2 text-xs font-medium transition
+                       text-green-700 hover:text-green-900 hover:bg-green-100/60
+                       dark:text-green-200 dark:hover:text-white dark:hover:bg-white/10"
           >
             {showPassword ? "Hide" : "Show"}
           </button>
         </div>
       </div>
 
-      {/* Submit Button */}
-      <PrimaryButton type="submit" disabled={isLoading}>
+      {/* Submit */}
+      <PrimaryButton type="submit" className="w-full" disabled={isLoading}>
         {isLoading ? "Logging in..." : "Login"}
       </PrimaryButton>
 
       {/* Links */}
       <div className="flex items-center justify-between text-sm">
-        <a
+        <Link
           href="/forgot-password"
-          className="text-green-700 hover:text-green-900 transition"
+          className="text-green-700 hover:text-green-900 hover:underline dark:text-green-200 dark:hover:text-white"
         >
           Forgot password?
-        </a>
+        </Link>
 
-        <a
+        <Link
           href="/register"
-          className="text-green-700 hover:text-green-900 transition"
+          className="text-green-700 hover:text-green-900 hover:underline dark:text-green-200 dark:hover:text-white"
         >
           Create an account
-        </a>
+        </Link>
       </div>
 
       {/* Disclaimer */}
-      <div className="pt-2">
-        <DisclaimerBox>
-          <strong>Important:</strong> Waypoint is not a medical service. It does
-          not diagnose or prescribe.
-        </DisclaimerBox>
-      </div>
+      <DisclaimerBox>
+        Important: Waypoint is not a medical service. It does not diagnose or
+        prescribe.
+      </DisclaimerBox>
     </form>
   );
 }

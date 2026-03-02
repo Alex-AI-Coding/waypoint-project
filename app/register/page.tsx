@@ -5,31 +5,31 @@ import RegisterForm from "./RegisterForm";
 
 export default function RegisterPage() {
   return (
-    <main className="min-h-screen flex items-center justify-center bg-green-50 p-6">
-      <div className="max-w-md w-full">
-        <Card>
-          <Header
-            title="Register"
-            subtitle="Please fill out the provided boxes"
-            rightLinkHref="/"
-            rightLinkLabel="Home"
-          />
+    <div className="min-h-screen bg-background text-foreground">
+      <div className="mx-auto flex min-h-screen max-w-3xl items-center justify-center px-4 py-10">
+        <div className="w-full">
+          <Header />
 
-          <RegisterForm />
+          <div className="mt-6">
+            <Card>
+              <div className="p-6 sm:p-8">
+                <h2 className="text-lg font-semibold">Create account</h2>
+                <p className="mt-1 text-sm opacity-80">
+                  Create your Waypoint account to save chats and preferences.
+                </p>
 
-          <div className="text-sm text-green-700 mt-4">
-            Already have an account?{" "}
-            <a
-              href="/login"
-              className="text-green-700 hover:text-green-900 transition"
-            >
-              Login
-            </a>
+                <div className="mt-5">
+                  <RegisterForm />
+                </div>
+              </div>
+            </Card>
           </div>
-        </Card>
 
-        <Footer />
+          <div className="mt-8">
+            <Footer />
+          </div>
+        </div>
       </div>
-    </main>
+    </div>
   );
 }

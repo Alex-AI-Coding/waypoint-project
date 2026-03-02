@@ -1,17 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { createPortal } from "react-dom";
-
-type ConfirmModalProps = {
-  open: boolean;
-  title: string;
-  description: string;
-  confirmLabel?: string;
-  cancelLabel?: string;
-  onConfirm: () => void;
-  onCancel: () => void;
-};
+import * as React from "react";
 
 export default function ConfirmModal({
   open,
@@ -21,64 +10,61 @@ export default function ConfirmModal({
   cancelLabel = "Cancel",
   onConfirm,
   onCancel,
-}: ConfirmModalProps) {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    function handleEscape(e: KeyboardEvent) {
+}: {
+  open: boolean;
+  title: string;
+  description?: string;
+  confirmLabel?: string;
+  cancelLabel?: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  React.useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
       if (e.key === "Escape") onCancel();
     }
-
-    if (open) {
-      document.addEventListener("keydown", handleEscape);
-    }
-
-    return () => {
-      document.removeEventListener("keydown", handleEscape);
-    };
+    if (open) window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
   }, [open, onCancel]);
 
-  if (!mounted || !open) return null;
+  if (!open) return null;
 
-  return createPortal(
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center">
-      {/* Backdrop */}
-      <div
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+      {/* overlay */}
+      <button
+        aria-label="Close"
         onClick={onCancel}
-        className="absolute inset-0 bg-black/30 backdrop-blur-sm animate-fade-in"
+        className="absolute inset-0 cursor-default bg-black/40 dark:bg-black/60"
       />
 
-      {/* Modal */}
-      <div className="relative z-10 w-full max-w-md rounded-2xl bg-white p-6 shadow-xl animate-fade-in">
-        <h2 className="text-lg font-semibold text-green-900">
-          {title}
-        </h2>
+      {/* modal */}
+      <div className="relative w-full max-w-md rounded-2xl border border-foreground/10 bg-background text-foreground shadow-xl">
+        <div className="p-5">
+          <div className="text-lg font-semibold">{title}</div>
+          {description && (
+            <div className="mt-2 text-sm opacity-80">{description}</div>
+          )}
 
-        <p className="mt-2 text-sm text-green-800/80">
-          {description}
-        </p>
+          <div className="mt-5 flex items-center justify-end gap-2">
+            <button
+              type="button"
+              onClick={onCancel}
+              className="rounded-xl border border-foreground/15 bg-background px-4 py-2 text-sm font-semibold text-foreground/80 transition hover:bg-foreground/5 focus:outline-none focus:ring-2 focus:ring-green-200"
+            >
+              {cancelLabel}
+            </button>
 
-        <div className="mt-6 flex justify-end gap-3">
-          <button
-            onClick={onCancel}
-            className="rounded-xl border border-green-300 px-4 py-2 text-sm text-green-900 hover:bg-green-100 transition"
-          >
-            {cancelLabel}
-          </button>
-
-          <button
-            onClick={onConfirm}
-            className="rounded-xl bg-green-700 px-4 py-2 text-sm text-white hover:bg-green-600 transition"
-          >
-            {confirmLabel}
-          </button>
+            <button
+              type="button"
+              onClick={onConfirm}
+              className="rounded-xl bg-green-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-200"
+            >
+              {confirmLabel}
+            </button>
+          </div>
         </div>
       </div>
-    </div>,
-    document.body
+    </div>
   );
 }

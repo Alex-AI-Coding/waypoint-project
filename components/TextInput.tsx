@@ -1,6 +1,6 @@
 import * as React from "react";
 
-type TextInputProps = React.InputHTMLAttributes<HTMLInputElement>;
+export type TextInputProps = React.InputHTMLAttributes<HTMLInputElement>;
 
 export default function TextInput({
   className = "",
@@ -10,11 +10,16 @@ export default function TextInput({
   return (
     <input
       type={type}
+      className={[
+        "w-full rounded-xl border px-4 py-3 text-sm transition",
+        "bg-background text-foreground placeholder:text-foreground/50",
+        "border-foreground/15",
+        "focus:outline-none focus:ring-2 focus:ring-green-200 focus:border-green-300",
+        "disabled:opacity-60 disabled:cursor-not-allowed",
+        "dark:focus:ring-green-300/30 dark:focus:border-green-700",
+        className,
+      ].join(" ")}
       {...props}
-      className={
-        "w-full rounded-xl border border-green-300 bg-white px-4 py-3 text-sm text-green-900 placeholder:text-green-700/60 focus:outline-none focus:ring-2 focus:ring-green-200 " +
-        className
-      }
     />
   );
 }

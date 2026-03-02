@@ -1,100 +1,73 @@
-export type ThemePref = "light" | "dark" | "system";
-export type TonePref = "calm" | "gentle" | "direct";
+export type ThemePref = "system" | "light" | "dark";
+export type TonePref = "gentle" | "calm" | "direct";
 export type FontSizePref = "sm" | "md" | "lg" | "xl";
 export type FontStylePref = "system" | "lexend" | "atkinson";
 
-export type UserSettings = {
+export type WaypointSettings = {
   theme: ThemePref;
   tone: TonePref;
   font_size: FontSizePref;
   font_style: FontStylePref;
 };
 
-export const DEFAULT_SETTINGS: UserSettings = {
+export const DEFAULT_SETTINGS: WaypointSettings = {
   theme: "system",
-  tone: "calm",
+  tone: "gentle",
   font_size: "md",
   font_style: "system",
 };
 
-const STORAGE_KEY = "waypoint_settings_v1";
+export const SETTINGS_KEY = "waypoint_settings_v1";
 
-export function loadSettingsFromStorage(): UserSettings {
+export function loadSettingsFromStorage(): WaypointSettings {
   try {
-    if (typeof window === "undefined") return DEFAULT_SETTINGS;
-
-    const raw = window.localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(SETTINGS_KEY);
     if (!raw) return DEFAULT_SETTINGS;
-
     const parsed = JSON.parse(raw);
-    return { ...DEFAULT_SETTINGS, ...parsed };
+    return {
+      ...DEFAULT_SETTINGS,
+      ...parsed,
+    };
   } catch {
     return DEFAULT_SETTINGS;
   }
 }
 
-export function saveSettingsToStorage(settings: UserSettings) {
+export function saveSettingsToStorage(s: WaypointSettings) {
   try {
-    if (typeof window === "undefined") return;
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
-  } catch {
-    // ignore storage failures (private mode, blocked storage, etc.)
-  }
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
+  } catch {}
 }
 
-/* ===============================
-   APPLY SETTINGS TO DOCUMENT
-   - Theme (light/dark/system)
-   - Font size
-   - Font style
-================================ */
+export function applySettingsToDocument(s: WaypointSettings) {
+  const root = document.documentElement;
 
-let media: MediaQueryList | null = null;
-let attachedHandler: ((e: MediaQueryListEvent) => void) | null = null;
+  // Theme
+  const prefersDark =
+    window.matchMedia &&
+    window.matchMedia("(prefers-color-scheme: dark)").matches;
 
-export function applySettingsToDocument(settings: UserSettings) {
-  if (typeof document === "undefined") return;
+  const isDark = s.theme === "dark" || (s.theme === "system" && prefersDark);
 
-  // Setup media query once (client-only)
-  if (!media && typeof window !== "undefined" && window.matchMedia) {
-    media = window.matchMedia("(prefers-color-scheme: dark)");
+  if (isDark) root.classList.add("dark");
+  else root.classList.remove("dark");
+
+  // Font size
+  let px = 16;
+  if (s.font_size === "sm") px = 14;
+  if (s.font_size === "md") px = 16;
+  if (s.font_size === "lg") px = 18;
+  if (s.font_size === "xl") px = 20;
+  root.style.fontSize = `${px}px`;
+
+  // Font style
+  if (s.font_style === "system") {
+    root.style.fontFamily = "";
+  } else if (s.font_style === "lexend") {
+    root.style.fontFamily =
+      "Lexend, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif";
+  } else if (s.font_style === "atkinson") {
+    root.style.fontFamily =
+      "Atkinson Hyperlegible, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif";
   }
-
-  const applyTheme = () => {
-    const prefersDark = !!media?.matches;
-
-    const resolvedTheme =
-      settings.theme === "system"
-        ? prefersDark
-          ? "dark"
-          : "light"
-        : settings.theme;
-
-    document.documentElement.classList.toggle("dark", resolvedTheme === "dark");
-  };
-
-  // Always apply now
-  applyTheme();
-
-  // Attach/detach listener based on current theme selection
-  // So "system" reacts live, but "light/dark" does not keep unnecessary listeners.
-  if (media) {
-    if (settings.theme === "system") {
-      if (!attachedHandler) {
-        attachedHandler = () => applyTheme();
-        media.addEventListener("change", attachedHandler);
-      }
-    } else {
-      if (attachedHandler) {
-        media.removeEventListener("change", attachedHandler);
-        attachedHandler = null;
-      }
-    }
-  }
-
-  // Font size (via data attribute)
-  document.documentElement.setAttribute("data-font-size", settings.font_size);
-
-  // Font style (via data attribute)
-  document.documentElement.setAttribute("data-font-style", settings.font_style);
 }

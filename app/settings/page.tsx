@@ -12,7 +12,6 @@ import {
   applySettingsToDocument,
   loadSettingsFromStorage,
   saveSettingsToStorage,
-  type UserSettings,
   type ThemePref,
   type TonePref,
   type FontSizePref,
@@ -22,11 +21,36 @@ import {
 type Status = "idle" | "saving" | "saved" | "error";
 
 export default function SettingsPage() {
-  const [settings, setSettings] = useState<UserSettings>(DEFAULT_SETTINGS);
+  // ✅ IMPORTANT: load from localStorage immediately (no default flash)
+  const [settings, setSettings] = useState(() => {
+    if (typeof window === "undefined") return DEFAULT_SETTINGS;
+    return loadSettingsFromStorage();
+  });
 
-  // Optional toggles (keep your UI but make it real in localStorage)
-  const [supportiveReminders, setSupportiveReminders] = useState(true);
-  const [alwaysShowCrisisLink, setAlwaysShowCrisisLink] = useState(true);
+  // Optional toggles (local-only)
+  const [supportiveReminders, setSupportiveReminders] = useState(() => {
+    if (typeof window === "undefined") return true;
+    try {
+      const raw = localStorage.getItem("waypoint_ui_prefs_v1");
+      if (!raw) return true;
+      const p = JSON.parse(raw);
+      return p.supportiveReminders ?? true;
+    } catch {
+      return true;
+    }
+  });
+
+  const [alwaysShowCrisisLink, setAlwaysShowCrisisLink] = useState(() => {
+    if (typeof window === "undefined") return true;
+    try {
+      const raw = localStorage.getItem("waypoint_ui_prefs_v1");
+      if (!raw) return true;
+      const p = JSON.parse(raw);
+      return p.alwaysShowCrisisLink ?? true;
+    } catch {
+      return true;
+    }
+  });
 
   const [status, setStatus] = useState<Status>("idle");
 
@@ -35,21 +59,10 @@ export default function SettingsPage() {
   const sizeOptions: FontSizePref[] = ["sm", "md", "lg", "xl"];
   const fontOptions: FontStylePref[] = ["system", "lexend", "atkinson"];
 
-  // Load settings on mount
+  // ✅ Apply on mount (in case user opened Settings directly)
   useEffect(() => {
-    const s = loadSettingsFromStorage();
-    setSettings(s);
-    applySettingsToDocument(s);
-
-    // Load your optional toggles (local-only)
-    try {
-      const raw = localStorage.getItem("waypoint_ui_prefs_v1");
-      if (raw) {
-        const p = JSON.parse(raw);
-        setSupportiveReminders(p.supportiveReminders ?? true);
-        setAlwaysShowCrisisLink(p.alwaysShowCrisisLink ?? true);
-      }
-    } catch {}
+    applySettingsToDocument(settings);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Apply + store locally whenever settings change
@@ -101,190 +114,187 @@ export default function SettingsPage() {
     return (
       "rounded-lg border px-3 py-1 text-sm transition " +
       (active
-        ? "border-green-300 text-green-900 bg-green-100"
-        : "border-green-200 text-green-700 bg-white hover:bg-green-50")
+        ? "border-green-300 text-green-900 bg-green-100 dark:border-green-700 dark:text-green-100 dark:bg-green-900/30"
+        : "border-foreground/15 text-foreground/80 bg-background hover:bg-foreground/5")
     );
   }
 
   function togglePill(active: boolean) {
     return (
       "h-5 w-10 rounded-full transition " +
-      (active ? "bg-green-600" : "bg-green-300")
+      (active ? "bg-green-600" : "bg-green-300 dark:bg-green-700/60")
     );
   }
 
   return (
-    <main className="min-h-screen bg-green-50 dark:bg-zinc-950 p-6 flex justify-center">
-      <div className="w-full max-w-3xl">
-        <Card>
+    <div className="min-h-screen bg-background text-foreground">
+      <div className="mx-auto w-full max-w-3xl px-4 py-6">
+        <Header />
+        <div className="mt-4">
           <Nav current="settings" />
-          <div className="h-3" />
+        </div>
 
-          <Header title="Settings" subtitle="" rightLinkHref="/" rightLinkLabel="Home" />
-
-          <div className="space-y-6">
-            {/* Optional toggle (now real, local-only) */}
-            <button
-              type="button"
-              onClick={() => setSupportiveReminders((v) => !v)}
-              className="w-full flex items-center justify-between text-left"
-            >
-              <div>
-                <p className="text-sm font-medium text-green-900 dark:text-zinc-100">
-                  Supportive reminders
-                </p>
-                <p className="text-xs text-green-700 dark:text-zinc-300">
-                  Show gentle reminders during chat
-                </p>
-              </div>
-              <div className={togglePill(supportiveReminders)} />
-            </button>
-
-            {/* Optional toggle (now real, local-only) */}
-            <button
-              type="button"
-              onClick={() => setAlwaysShowCrisisLink((v) => !v)}
-              className="w-full flex items-center justify-between text-left"
-            >
-              <div>
-                <p className="text-sm font-medium text-green-900 dark:text-zinc-100">
-                  Crisis resources link
-                </p>
-                <p className="text-xs text-green-700 dark:text-zinc-300">
-                  Always show emergency resources
-                </p>
-              </div>
-              <div className={togglePill(alwaysShowCrisisLink)} />
-            </button>
-
-            {/* Theme */}
-            <div>
-              <p className="text-sm font-medium text-green-900 dark:text-zinc-100">
-                Theme
-              </p>
-              <p className="text-xs text-green-700 dark:text-zinc-300 mb-2">
-                Light, dark, or match your device
+        <div className="mt-4">
+          <Card>
+            <div className="p-4 sm:p-6">
+              <h2 className="text-lg font-semibold">Settings</h2>
+              <p className="mt-1 text-sm opacity-80">
+                Your preferences are applied instantly. Save to sync across devices.
               </p>
 
-              <div className="flex gap-2 flex-wrap">
-                {themeOptions.map((v) => (
-                  <button
-                    key={v}
-                    type="button"
-                    onClick={() => setSettings((s) => ({ ...s, theme: v }))}
-                    className={pill(settings.theme === v)}
-                  >
-                    {v[0].toUpperCase() + v.slice(1)}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Tone */}
-            <div>
-              <p className="text-sm font-medium text-green-900 dark:text-zinc-100">
-                Tone
-              </p>
-              <p className="text-xs text-green-700 dark:text-zinc-300 mb-2">
-                Preferred response tone
-              </p>
-
-              <div className="flex gap-2 flex-wrap">
-                {toneOptions.map((v) => (
-                  <button
-                    key={v}
-                    type="button"
-                    onClick={() => setSettings((s) => ({ ...s, tone: v }))}
-                    className={pill(settings.tone === v)}
-                  >
-                    {v === "gentle" ? "Gentle" : v === "calm" ? "Neutral" : "Direct"}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Font size */}
-            <div>
-              <p className="text-sm font-medium text-green-900 dark:text-zinc-100">
-                Font size
-              </p>
-              <p className="text-xs text-green-700 dark:text-zinc-300 mb-2">
-                Adjust text size for comfortable reading
-              </p>
-
-              <div className="flex gap-2 flex-wrap">
-                {sizeOptions.map((v) => (
-                  <button
-                    key={v}
-                    type="button"
-                    onClick={() => setSettings((s) => ({ ...s, font_size: v }))}
-                    className={pill(settings.font_size === v)}
-                  >
-                    {v.toUpperCase()}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Font style */}
-            <div>
-              <p className="text-sm font-medium text-green-900 dark:text-zinc-100">
-                Font style
-              </p>
-              <p className="text-xs text-green-700 dark:text-zinc-300 mb-2">
-                Reading-friendly fonts for accessibility
-              </p>
-
-              <div className="flex gap-2 flex-wrap">
-                {fontOptions.map((v) => (
-                  <button
-                    key={v}
-                    type="button"
-                    onClick={() => setSettings((s) => ({ ...s, font_style: v }))}
-                    className={pill(settings.font_style === v)}
-                  >
-                    {v === "system" ? "System" : v === "lexend" ? "Lexend" : "Atkinson"}
-                  </button>
-                ))}
-              </div>
-
-              <p className="mt-2 text-xs text-green-700 dark:text-zinc-300">
-                Preview: This page updates instantly based on your choices.
-              </p>
-            </div>
-
-            {/* Save button */}
-            <div className="flex items-center gap-3">
+              {/* Optional toggle (local-only) */}
               <button
                 type="button"
-                onClick={saveToSupabase}
-                disabled={status === "saving"}
-                className="rounded-xl bg-green-700 px-4 py-2 text-sm text-white hover:bg-green-600 transition disabled:opacity-60"
+                onClick={() => setSupportiveReminders((v: boolean) => !v)}
+                className="mt-5 w-full rounded-xl border border-foreground/10 bg-foreground/5 p-4 text-left hover:bg-foreground/10 transition"
               >
-                {status === "saving" ? "Saving…" : "Save changes"}
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <div className="font-medium">Supportive reminders</div>
+                    <div className="text-sm opacity-80">
+                      Show gentle reminders during chat
+                    </div>
+                  </div>
+                  <div className={togglePill(supportiveReminders)} />
+                </div>
               </button>
 
-              {status === "saved" && (
-                <span className="text-sm text-green-700 dark:text-green-400">
-                  Saved!
-                </span>
-              )}
+              {/* Optional toggle (local-only) */}
+              <button
+                type="button"
+                onClick={() => setAlwaysShowCrisisLink((v: boolean) => !v)}
+                className="mt-3 w-full rounded-xl border border-foreground/10 bg-foreground/5 p-4 text-left hover:bg-foreground/10 transition"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <div className="font-medium">Crisis resources link</div>
+                    <div className="text-sm opacity-80">
+                      Always show emergency resources
+                    </div>
+                  </div>
+                  <div className={togglePill(alwaysShowCrisisLink)} />
+                </div>
+              </button>
 
-              {status === "error" && (
-                <span className="text-sm text-red-600">
-                  Couldn’t save. Are you logged in?
-                </span>
-              )}
+              {/* Theme */}
+              <div className="mt-6">
+                <div className="font-medium">Theme</div>
+                <div className="text-sm opacity-80">
+                  Light, dark, or match your device
+                </div>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {themeOptions.map((v) => (
+                    <button
+                      key={v}
+                      type="button"
+                      onClick={() => setSettings((s) => ({ ...s, theme: v }))}
+                      className={pill(settings.theme === v)}
+                    >
+                      {v[0].toUpperCase() + v.slice(1)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Tone */}
+              <div className="mt-6">
+                <div className="font-medium">Tone</div>
+                <div className="text-sm opacity-80">Preferred response tone</div>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {toneOptions.map((v) => (
+                    <button
+                      key={v}
+                      type="button"
+                      onClick={() => setSettings((s) => ({ ...s, tone: v }))}
+                      className={pill(settings.tone === v)}
+                    >
+                      {v === "gentle" ? "Gentle" : v === "calm" ? "Neutral" : "Direct"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Font size */}
+              <div className="mt-6">
+                <div className="font-medium">Font size</div>
+                <div className="text-sm opacity-80">
+                  Adjust text size for comfortable reading
+                </div>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {sizeOptions.map((v) => (
+                    <button
+                      key={v}
+                      type="button"
+                      onClick={() => setSettings((s) => ({ ...s, font_size: v }))}
+                      className={pill(settings.font_size === v)}
+                    >
+                      {v.toUpperCase()}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Font style */}
+              <div className="mt-6">
+                <div className="font-medium">Font style</div>
+                <div className="text-sm opacity-80">
+                  Reading-friendly fonts for accessibility
+                </div>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {fontOptions.map((v) => (
+                    <button
+                      key={v}
+                      type="button"
+                      onClick={() => setSettings((s) => ({ ...s, font_style: v }))}
+                      className={pill(settings.font_style === v)}
+                    >
+                      {v === "system" ? "System" : v === "lexend" ? "Lexend" : "Atkinson"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <p className="mt-4 text-sm opacity-80">
+                Preview: This page updates instantly based on your choices.
+              </p>
+
+              {/* Save button */}
+              <div className="mt-6 flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={saveToSupabase}
+                  className="rounded-xl bg-green-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-200"
+                >
+                  {status === "saving" ? "Saving…" : "Save changes"}
+                </button>
+
+                {status === "saved" && (
+                  <span className="text-sm text-green-700 dark:text-green-200">
+                    Saved!
+                  </span>
+                )}
+
+                {status === "error" && (
+                  <span className="text-sm text-red-600">
+                    Couldn’t save. Are you logged in?
+                  </span>
+                )}
+              </div>
+
+              <div className="mt-6">
+                <DisclaimerBox>
+                  Important: Waypoint is not a medical service. It does not diagnose
+                  or prescribe.
+                </DisclaimerBox>
+              </div>
             </div>
+          </Card>
+        </div>
 
-            <DisclaimerBox>
-              <strong>Important:</strong> Waypoint is not a medical service. It does not diagnose or prescribe.
-            </DisclaimerBox>
-          </div>
-        </Card>
-
-        <Footer />
+        <div className="mt-8">
+          <Footer />
+        </div>
       </div>
-    </main>
+    </div>
   );
 }

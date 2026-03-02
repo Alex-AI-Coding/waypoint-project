@@ -1,40 +1,129 @@
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
 import Footer from "@/components/Footer";
 import Card from "@/components/Card";
-import DisclaimerBox from "@/components/DisclaimerBox";
 import Header from "@/components/Header";
+import DisclaimerBox from "@/components/DisclaimerBox";
 import TextInput from "@/components/TextInput";
 import { PrimaryButton } from "@/components/Button";
+import { createClient } from "@/lib/supabase/browser";
 
 export default function ForgotPasswordPage() {
+  const [email, setEmail] = useState("");
+  const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">(
+    "idle"
+  );
+  const [error, setError] = useState<string | null>(null);
+
+  async function sendReset(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+
+    const cleanEmail = email.trim();
+    if (!cleanEmail) {
+      setError("Please enter your email.");
+      return;
+    }
+
+    setStatus("sending");
+    try {
+      const supabase = createClient();
+
+      // Sends a reset link to the email
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(
+        cleanEmail, {
+  redirectTo: `${window.location.origin}/reset-password`,
+});
+
+      if (resetError) {
+        setError(resetError.message);
+        setStatus("error");
+        return;
+      }
+
+      setStatus("sent");
+    } catch {
+      setError("Something went wrong. Please try again.");
+      setStatus("error");
+    }
+  }
+
   return (
-    <main className="min-h-screen flex items-center justify-center bg-green-50 p-6">
-      <div className="max-w-md w-full">
-        <Card>
-          <Header
-            title="Forgot password"
-            subtitle="Insert your email and press send!"
-            rightLinkHref="/login"
-            rightLinkLabel="Back"
-          />
+    <div className="min-h-screen bg-background text-foreground">
+      <div className="mx-auto flex min-h-screen max-w-3xl items-center justify-center px-4 py-10">
+        <div className="w-full">
+          <Header />
 
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-green-900">Email</label>
-              <TextInput type="email" placeholder="you@example.com" />
-            </div>
+          <div className="mt-6">
+            <Card>
+              <div className="p-6 sm:p-8">
+                <h2 className="text-lg font-semibold">Forgot password</h2>
+                <p className="mt-1 text-sm opacity-80">
+                  Enter your email and we’ll send you a reset link.
+                </p>
 
-            <PrimaryButton>Send reset link</PrimaryButton>
+                {error && (
+                  <div className="mt-4 rounded-xl border border-red-300 bg-red-50/60 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-200">
+                    {error}
+                  </div>
+                )}
 
-            <div className="pt-2">
-              <DisclaimerBox>
-                <strong>Important:</strong> Waypoint is not a medical service. It
-                does not diagnose or prescribe.
-              </DisclaimerBox>
-            </div>
+                {status === "sent" && (
+                  <div className="mt-4 rounded-xl border border-green-300 bg-green-50/60 px-4 py-3 text-sm text-green-800 dark:border-green-800 dark:bg-green-900/20 dark:text-green-200">
+                    Sent! Check your inbox (and spam folder) for the reset link.
+                  </div>
+                )}
+
+                <form onSubmit={sendReset} className="mt-5 space-y-4">
+                  <div>
+                    <label className="mb-1 block text-sm font-medium">
+                      Email
+                    </label>
+                    <TextInput
+                      name="email"
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="you@example.com"
+                      className="w-full"
+                    />
+                  </div>
+
+                  <PrimaryButton
+                    type="submit"
+                    className="w-full"
+                    disabled={status === "sending"}
+                  >
+                    {status === "sending" ? "Sending…" : "Send reset link"}
+                  </PrimaryButton>
+                </form>
+
+                <div className="mt-4 text-center text-sm">
+                  <Link
+                    href="/login"
+                    className="text-green-700 hover:text-green-900 hover:underline dark:text-green-200"
+                  >
+                    Back to login
+                  </Link>
+                </div>
+
+                <div className="mt-6">
+                  <DisclaimerBox>
+                    <span className="font-semibold">Important:</span> Waypoint is
+                    not a medical service. It does not diagnose or prescribe.
+                  </DisclaimerBox>
+                </div>
+              </div>
+            </Card>
           </div>
-        </Card>
-        <Footer />
+
+          <div className="mt-8">
+            <Footer />
+          </div>
+        </div>
       </div>
-    </main>
+    </div>
   );
 }

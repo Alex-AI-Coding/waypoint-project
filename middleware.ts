@@ -6,11 +6,22 @@ export async function middleware(request: NextRequest) {
   // 1) Refresh session cookies if needed
   const response = await updateSession(request);
 
-  // 2) Only protect /chat routes
-  const isChatRoute = request.nextUrl.pathname.startsWith("/chat");
-  if (!isChatRoute) return response;
+  const { pathname } = request.nextUrl;
 
-  // 3) Check if the user is logged in
+  // Routes
+  const isProtectedRoute =
+    pathname.startsWith("/chat") || pathname.startsWith("/settings");
+
+  const isAuthRoute =
+    pathname.startsWith("/login") ||
+    pathname.startsWith("/register") ||
+    pathname.startsWith("/forgot-password") ||
+    pathname.startsWith("/reset-password");
+
+  // If it's neither protected nor auth-related, do nothing
+  if (!isProtectedRoute && !isAuthRoute) return response;
+
+  // 2) Check if the user is logged in
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -29,12 +40,21 @@ export async function middleware(request: NextRequest) {
   );
 
   const { data } = await supabase.auth.getUser();
+  const user = data.user;
 
-  // 4) If not logged in, redirect to /login
-  if (!data.user) {
+  // 3) If not logged in, redirect away from protected routes
+  if (!user && isProtectedRoute) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
-    url.searchParams.set("next", "/chat");
+    url.searchParams.set("next", pathname);
+    return NextResponse.redirect(url);
+  }
+
+  // 4) If logged in, redirect away from auth pages
+  if (user && isAuthRoute) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/chat";
+    url.searchParams.delete("next");
     return NextResponse.redirect(url);
   }
 
