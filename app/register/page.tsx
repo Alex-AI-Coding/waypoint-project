@@ -15,7 +15,7 @@ export default function RegisterPage() {
               <div className="p-6 sm:p-8">
                 <h2 className="text-lg font-semibold">Create account</h2>
                 <p className="mt-1 text-sm opacity-80">
-                  Create your Waypoint account to save chats and preferences.
+                  Create your Waypoint account to access the chat.
                 </p>
 
                 <div className="mt-5">

@@ -57,9 +57,9 @@ If you're in immediate danger or feel like you might act on these thoughts, plea
 
 If you can, consider reaching out to someone you trust — a friend, family member, or someone close to you.
 
-If you're in the United States, you can call or text 988 to reach the Suicide & Crisis Lifeline. It's free and available 24/7.
+If you're in the Philippines, you can call or text 0966-351-4518 (Globe) or 0908-639-2672 (Smart) to reach the Suicide & Crisis Lifeline. It's free and available 24/7.
 
-If you're outside the U.S., I can help you look for a crisis support number in your country.
+If you're outside the Philippines, I can help you look for a crisis support number in your country.
 
 I'm here to listen, but you deserve real-time human support too.`;
 }

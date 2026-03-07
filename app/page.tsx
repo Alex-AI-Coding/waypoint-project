@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Card from "@/components/Card";
 import DisclaimerBox from "@/components/DisclaimerBox";
+import Image from "next/image";
 
 export default function HomePage() {
   return (
@@ -10,6 +11,16 @@ export default function HomePage() {
           <Card>
             <div className="p-6 sm:p-8">
               <div className="flex flex-col items-center text-center">
+                <div className="mb-3 flex justify-center">
+  <Image
+    src="/WaypointIcon.png"
+    alt="Waypoint icon"
+    width={112}
+    height={112}
+    className="rounded-2xl border border-foreground/10"
+    priority
+  />
+</div>
                 <div className="text-2xl font-semibold">Waypoint</div>
                 <p className="mt-2 text-sm opacity-80">
                   A supportive mental health and guidance chatbot.
