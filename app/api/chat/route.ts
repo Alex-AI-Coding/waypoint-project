@@ -101,8 +101,8 @@ function getPhilippinesCrisisBlock(): string {
 function getSoftSupportPreface(alwaysShowCrisisLink: boolean): string {
   const preface = [
     "I’m really sorry things feel this heavy right now.",
-    "You don’t have to figure everything out at once.",
-    "We can slow this down and focus on one small step together.",
+    "You don’t have to carry all of this alone.",
+    "We can slow things down and focus on one small step together.",
   ].join(" ");
 
   if (!alwaysShowCrisisLink) return preface;
@@ -135,6 +135,15 @@ function getNoPrescribingResponse(): string {
     "For medication questions, it’s safest to speak with a licensed doctor or pharmacist.",
     "If you want, I can still help in safer ways — for example, by helping you describe your symptoms clearly, list questions for a doctor, or suggest non-medication coping steps.",
   ].join(" ");
+}
+
+function getSoftDistressResponse(alwaysShowCrisisLink: boolean, userMessage: string): string {
+  return [
+    getSoftSupportPreface(alwaysShowCrisisLink),
+    "",
+    "Thank you for telling me that.",
+    "Would it help if we slow this down and focus on just one small thing you can do in the next 10 minutes—like sitting near someone, drinking water, or taking a few steady breaths?",
+  ].join("\n");
 }
 
 function buildSystemPrompt(options?: {
@@ -322,6 +331,15 @@ export async function POST(req: Request) {
       supportiveReminders = settingsRow?.supportive_reminders ?? true;
       alwaysShowCrisisLink = settingsRow?.always_show_crisis_link ?? true;
     }
+
+    if (softDistress) {
+  const stream = sseStreamFromSingleReply(
+    getSoftDistressResponse(alwaysShowCrisisLink, message)
+  );
+  return new Response(stream, {
+    headers: sseHeaders(cookieResponse.headers),
+  });
+}
 
     let history: Array<{ role: "user" | "assistant"; content: string }> = [];
 
