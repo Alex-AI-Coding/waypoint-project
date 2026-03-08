@@ -2,14 +2,17 @@
 
 import { logoutAction } from "@/app/actions/logout";
 import ConfirmModal from "@/components/ConfirmModal";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 
 export default function Nav({
   current,
+  onNavigate,
 }: {
   current?: "home" | "chat" | "settings";
+  onNavigate?: (path: string) => boolean | void;
 }) {
+  const router = useRouter();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const logoutFormRef = useRef<HTMLFormElement | null>(null);
 
@@ -18,27 +21,33 @@ export default function Nav({
   const active =
     "bg-green-100 text-green-900 dark:bg-green-900/30 dark:text-green-100";
   const inactive =
-    "text-green-700 hover:text-green-900 hover:bg-green-100/60 " +
-    "dark:text-green-200 dark:hover:text-white dark:hover:bg-white/10";
+    "text-green-700 hover:text-green-900 hover:bg-green-100/60 dark:text-green-200 dark:hover:text-white dark:hover:bg-white/10";
+
+  function go(path: string) {
+    const result = onNavigate?.(path);
+    if (result === false) return;
+    router.push(path);
+  }
 
   return (
     <>
       <nav className="flex items-center gap-2">
-        <Link
-          href="/chat"
+        <button
+          type="button"
+          onClick={() => go("/chat")}
           className={`${base} ${current === "chat" ? active : inactive}`}
         >
           Chat
-        </Link>
+        </button>
 
-        <Link
-          href="/settings"
+        <button
+          type="button"
+          onClick={() => go("/settings")}
           className={`${base} ${current === "settings" ? active : inactive}`}
         >
           Settings
-        </Link>
+        </button>
 
-        {/* Hidden logout form */}
         <form ref={logoutFormRef} action={logoutAction} className="hidden" />
 
         <button
