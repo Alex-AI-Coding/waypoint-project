@@ -52,34 +52,24 @@ function loadUiPrefs() {
 export default function SettingsPage() {
   const router = useRouter();
 
-  const initialSettings =
-    typeof window === "undefined"
-      ? DEFAULT_SETTINGS
-      : loadSettingsFromStorage();
+  // IMPORTANT: use stable defaults for first render
+  const [savedSettings, setSavedSettings] = useState<UserSettings>(DEFAULT_SETTINGS);
+  const [draftSettings, setDraftSettings] = useState<UserSettings>(DEFAULT_SETTINGS);
 
-  const initialUiPrefs =
-    typeof window === "undefined"
-      ? { supportiveReminders: true, alwaysShowCrisisLink: true }
-      : loadUiPrefs();
-
-  const [savedSettings, setSavedSettings] = useState<UserSettings>(initialSettings);
-  const [draftSettings, setDraftSettings] = useState<UserSettings>(initialSettings);
-
-  const [savedSupportiveReminders, setSavedSupportiveReminders] = useState<boolean>(
-    initialUiPrefs.supportiveReminders
-  );
-  const [draftSupportiveReminders, setDraftSupportiveReminders] = useState<boolean>(
-    initialUiPrefs.supportiveReminders
-  );
+  const [savedSupportiveReminders, setSavedSupportiveReminders] =
+    useState<boolean>(true);
+  const [draftSupportiveReminders, setDraftSupportiveReminders] =
+    useState<boolean>(true);
 
   const [savedAlwaysShowCrisisLink, setSavedAlwaysShowCrisisLink] =
-    useState<boolean>(initialUiPrefs.alwaysShowCrisisLink);
+    useState<boolean>(true);
   const [draftAlwaysShowCrisisLink, setDraftAlwaysShowCrisisLink] =
-    useState<boolean>(initialUiPrefs.alwaysShowCrisisLink);
+    useState<boolean>(true);
 
   const [status, setStatus] = useState<Status>("idle");
   const [showUnsavedConfirm, setShowUnsavedConfirm] = useState(false);
   const [pendingPath, setPendingPath] = useState<string | null>(null);
+  const [hasLoadedInitialData, setHasLoadedInitialData] = useState(false);
 
   const themeOptions: ThemePref[] = ["system", "light", "dark"];
   const toneOptions: TonePref[] = ["gentle", "calm", "direct"];
@@ -101,10 +91,25 @@ export default function SettingsPage() {
     draftAlwaysShowCrisisLink,
   ]);
 
+  // Load local saved values AFTER mount
   useEffect(() => {
-    applySettingsToDocument(draftSettings);
-  }, [draftSettings]);
+    const localSettings = loadSettingsFromStorage();
+    const localUiPrefs = loadUiPrefs();
 
+    setSavedSettings(localSettings);
+    setDraftSettings(localSettings);
+
+    setSavedSupportiveReminders(localUiPrefs.supportiveReminders);
+    setDraftSupportiveReminders(localUiPrefs.supportiveReminders);
+
+    setSavedAlwaysShowCrisisLink(localUiPrefs.alwaysShowCrisisLink);
+    setDraftAlwaysShowCrisisLink(localUiPrefs.alwaysShowCrisisLink);
+
+    applySettingsToDocument(localSettings);
+    setHasLoadedInitialData(true);
+  }, []);
+
+  // Then try Supabase
   useEffect(() => {
     async function loadFromSupabase() {
       try {
@@ -166,11 +171,20 @@ export default function SettingsPage() {
             alwaysShowCrisisLink: crisis,
           })
         );
+
+        applySettingsToDocument(fromDb);
       } catch {}
     }
 
-    loadFromSupabase();
-  }, []);
+    if (hasLoadedInitialData) {
+      loadFromSupabase();
+    }
+  }, [hasLoadedInitialData]);
+
+  useEffect(() => {
+    if (!hasLoadedInitialData) return;
+    applySettingsToDocument(draftSettings);
+  }, [draftSettings, hasLoadedInitialData]);
 
   useEffect(() => {
     function handleBeforeUnload(e: BeforeUnloadEvent) {

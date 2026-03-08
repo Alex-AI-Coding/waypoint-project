@@ -99,12 +99,22 @@ function getPhilippinesCrisisBlock(): string {
 }
 
 function getSoftSupportPreface(alwaysShowCrisisLink: boolean): string {
-  const preface =
-    "It sounds like things feel really heavy right now. I’m really glad you shared that with me.";
+  const preface = [
+    "I’m really sorry things feel this heavy right now.",
+    "You don’t have to figure everything out at once.",
+    "We can slow this down and focus on one small step together.",
+  ].join(" ");
 
   if (!alwaysShowCrisisLink) return preface;
 
-  return `${preface}\n\n${getPhilippinesCrisisBlock()}`;
+  return [
+    preface,
+    "",
+    "If you’re in the Philippines and you start feeling unsafe or worried you might act on these feelings, call 911 or contact the NCMH Crisis Hotline:",
+    "• 1553",
+    "• (02) 7-989-8727",
+    "• 0917-899-8727",
+  ].join("\n");
 }
 
 function getCrisisResponse(): string {
@@ -170,7 +180,9 @@ function buildSystemPrompt(options?: {
 
   if (options?.alwaysShowCrisisLink) {
     base.push(
-      "When a response involves emotional safety concerns, you may include a short Philippines crisis support reminder."
+      "For soft emotional distress, respond with empathy first, then gentle grounding or coping support. Do not sound robotic, legalistic, or overly clinical.",
+"For soft distress, if crisis resources are included, place them after the supportive response, not before it.",
+"For hard suicide or self-harm risk, prioritize immediate safety and crisis hotline guidance.",
     );
   }
 
@@ -339,10 +351,7 @@ export async function POST(req: Request) {
       alwaysShowCrisisLink,
     });
 
-    const userContent =
-      softDistress && alwaysShowCrisisLink
-        ? `${getSoftSupportPreface(alwaysShowCrisisLink)}\n\nUser message: ${message}`
-        : message;
+    const userContent = message;
 
     const ollamaMessages = [
       { role: "system", content: system },
