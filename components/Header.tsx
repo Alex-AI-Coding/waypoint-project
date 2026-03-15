@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 
 export default function Header({
   title = "Waypoint",
@@ -12,36 +13,34 @@ export default function Header({
   rightLinkLabel?: string;
 }) {
   return (
-    <div className="mb-4 flex items-start justify-between">
-      <div>
-        {/* Logo + Title */}
-        <div className="flex items-center gap-3">
+    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex items-center gap-4">
+        <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-emerald-200/70 bg-gradient-to-br from-emerald-100 to-white shadow-sm dark:border-emerald-400/15 dark:from-emerald-500/10 dark:to-[#2c323b]">
           <Image
             src="/WaypointIcon.png"
             alt="Waypoint logo"
-            width={36}
-            height={36}
+            width={102}
+            height={102}
             className="rounded-md"
-            priority
           />
-          <h1 className="text-xl font-semibold text-green-900">
-            {title}
-          </h1>
         </div>
 
-        <p className="mt-1 text-sm text-green-700">
-          {subtitle}
-        </p>
+        <div>
+          <h1 className="text-3xl font-semibold tracking-tight text-foreground">
+            {title}
+          </h1>
+          <p className="mt-1 text-sm text-foreground/65">{subtitle}</p>
+        </div>
       </div>
 
-      {rightLinkHref && rightLinkLabel && (
-        <a
+      {rightLinkHref && rightLinkLabel ? (
+        <Link
           href={rightLinkHref}
-          className="text-sm text-green-700 hover:text-green-900 transition focus:outline-none focus:ring-2 focus:ring-green-200 rounded-lg px-2 py-1"
+          className="inline-flex items-center rounded-full border border-foreground/10 px-4 py-2 text-sm font-medium text-foreground/80 transition hover:bg-foreground/5 dark:border-white/10 dark:hover:bg-white/6"
         >
           {rightLinkLabel}
-        </a>
-      )}
+        </Link>
+      ) : null}
     </div>
   );
 }

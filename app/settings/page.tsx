@@ -36,14 +36,12 @@ export default function SettingsPage() {
 
   const [savedSettings, setSavedSettings] = useState<UserSettings>(DEFAULT_SETTINGS);
   const [draftSettings, setDraftSettings] = useState<UserSettings>(DEFAULT_SETTINGS);
-
   const [savedUiPrefs, setSavedUiPrefs] = useState<UiPrefs>(DEFAULT_UI_PREFS);
   const [draftUiPrefs, setDraftUiPrefs] = useState<UiPrefs>(DEFAULT_UI_PREFS);
-
   const [status, setStatus] = useState<Status>("idle");
   const [showUnsavedConfirm, setShowUnsavedConfirm] = useState(false);
   const [pendingPath, setPendingPath] = useState<string | null>(null);
-  const [hasLoadedInitialData, setHasLoadedInitialData] = useState(false);
+  const [hasMounted, setHasMounted] = useState(false);
 
   const themeOptions: ThemePref[] = ["system", "light", "dark"];
   const toneOptions: TonePref[] = ["gentle", "calm", "direct"];
@@ -58,6 +56,12 @@ export default function SettingsPage() {
   }, [savedSettings, draftSettings, savedUiPrefs, draftUiPrefs]);
 
   useEffect(() => {
+    setHasMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!hasMounted) return;
+
     const localSettings = loadSettingsFromStorage();
     const localUiPrefs = loadUiPrefs();
 
@@ -68,10 +72,11 @@ export default function SettingsPage() {
 
     applySettingsToDocument(localSettings);
     applyUiPrefsToDocument(localUiPrefs);
-    setHasLoadedInitialData(true);
-  }, []);
+  }, [hasMounted]);
 
   useEffect(() => {
+    if (!hasMounted) return;
+
     async function loadFromSupabase() {
       try {
         const supabase = createClient();
@@ -130,20 +135,18 @@ export default function SettingsPage() {
       } catch {}
     }
 
-    if (hasLoadedInitialData) {
-      loadFromSupabase();
-    }
-  }, [hasLoadedInitialData]);
+    loadFromSupabase();
+  }, [hasMounted]);
 
   useEffect(() => {
-    if (!hasLoadedInitialData) return;
+    if (!hasMounted) return;
     applySettingsToDocument(draftSettings);
-  }, [draftSettings, hasLoadedInitialData]);
+  }, [draftSettings, hasMounted]);
 
   useEffect(() => {
-    if (!hasLoadedInitialData) return;
+    if (!hasMounted) return;
     applyUiPrefsToDocument(draftUiPrefs);
-  }, [draftUiPrefs, hasLoadedInitialData]);
+  }, [draftUiPrefs, hasMounted]);
 
   useEffect(() => {
     function handleBeforeUnload(e: BeforeUnloadEvent) {
@@ -180,7 +183,6 @@ export default function SettingsPage() {
     try {
       saveSettingsToStorage(draftSettings);
       saveUiPrefs(draftUiPrefs);
-
       setSavedSettings(draftSettings);
       setSavedUiPrefs(draftUiPrefs);
 
@@ -210,232 +212,269 @@ export default function SettingsPage() {
     }
   }
 
+  const previewTone = useMemo(() => {
+    if (draftSettings.tone === "gentle") {
+      return "You’re doing okay. We can take this one small step at a time.";
+    }
+    if (draftSettings.tone === "direct") {
+      return "Let’s keep it simple. Tell me what happened, and we’ll sort it out.";
+    }
+    return "I’m here with you. Tell me what’s going on, and we’ll work through it together.";
+  }, [draftSettings.tone]);
+
   function pill(active: boolean) {
-    return (
-      "rounded-xl border px-3 py-2 text-sm transition " +
-      (active
-        ? "border-green-300 text-green-900 bg-green-100 dark:border-green-700 dark:text-green-100 dark:bg-green-900/30"
-        : "border-foreground/15 text-foreground/80 bg-background hover:bg-foreground/5")
-    );
+    return [
+      "rounded-full border px-3.5 py-2 text-sm font-medium transition",
+      active
+        ? "border-emerald-300 bg-emerald-100 text-emerald-950 shadow-sm dark:border-emerald-400/20 dark:bg-emerald-500/14 dark:text-emerald-100"
+        : "border-foreground/10 bg-background text-foreground/80 hover:bg-foreground/5 dark:border-white/10 dark:hover:bg-white/6",
+    ].join(" ");
   }
 
   return (
     <>
-      <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col px-4 py-6">
-        <Header
-          title="Settings"
-          subtitle="Preview changes here before saving."
-        />
+      <main className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(16,185,129,0.08),transparent_32%),var(--background)] px-4 pb-10">
+        <Nav current="settings" />
 
-        <div className="mt-4">
-          <Nav current="settings" />
-        </div>
+        <div className="mx-auto mt-6 max-w-6xl">
+          <Header
+            title="Settings"
+            subtitle="Comfort-first preferences for your Waypoint space"
+          />
 
-        <div className="mt-6 grid gap-6">
-          <Card>
-            <div className="rounded-3xl border border-foreground/10 bg-card p-6 shadow-sm">
-              <div className="flex flex-col gap-2">
-                <h2 className="text-xl font-semibold">Appearance</h2>
-                <p className="text-sm text-foreground/70">
-                  Changes preview instantly on this page. They only become saved
-                  when you press <span className="font-medium">Save changes</span>.
-                </p>
-              </div>
-
-              <div className="mt-6 space-y-6">
-                <section>
-                  <h3 className="font-medium">Theme</h3>
-                  <p className="mb-3 text-sm text-foreground/70">
-                    Light, dark gray, or match your device.
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {themeOptions.map((v) => (
-                      <button
-                        key={v}
-                        type="button"
-                        onClick={() =>
-                          setDraftSettings((s) => ({ ...s, theme: v }))
-                        }
-                        className={pill(draftSettings.theme === v)}
-                      >
-                        {v[0].toUpperCase() + v.slice(1)}
-                      </button>
-                    ))}
-                  </div>
-                </section>
-
-                <section>
-                  <h3 className="font-medium">Tone</h3>
-                  <p className="mb-3 text-sm text-foreground/70">
-                    Preferred response style.
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {toneOptions.map((v) => (
-                      <button
-                        key={v}
-                        type="button"
-                        onClick={() =>
-                          setDraftSettings((s) => ({ ...s, tone: v }))
-                        }
-                        className={pill(draftSettings.tone === v)}
-                      >
-                        {v === "gentle"
-                          ? "Gentle"
-                          : v === "calm"
-                          ? "Neutral"
-                          : "Direct"}
-                      </button>
-                    ))}
-                  </div>
-                </section>
-
-                <section>
-                  <h3 className="font-medium">Font size</h3>
-                  <p className="mb-3 text-sm text-foreground/70">
-                    Adjust text size for comfortable reading.
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {sizeOptions.map((v) => (
-                      <button
-                        key={v}
-                        type="button"
-                        onClick={() =>
-                          setDraftSettings((s) => ({ ...s, font_size: v }))
-                        }
-                        className={pill(draftSettings.font_size === v)}
-                      >
-                        {v.toUpperCase()}
-                      </button>
-                    ))}
-                  </div>
-                </section>
-
-                <section>
-                  <h3 className="font-medium">Font style</h3>
-                  <p className="mb-3 text-sm text-foreground/70">
-                    Reading-friendly fonts with clearer visual differences.
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {fontOptions.map((v) => (
-                      <button
-                        key={v}
-                        type="button"
-                        onClick={() =>
-                          setDraftSettings((s) => ({ ...s, font_style: v }))
-                        }
-                        className={pill(draftSettings.font_style === v)}
-                      >
-                        {v === "system"
-                          ? "System"
-                          : v === "lexend"
-                          ? "Lexend"
-                          : "Atkinson"}
-                      </button>
-                    ))}
-                  </div>
-                </section>
-              </div>
-            </div>
-          </Card>
-
-          <Card>
-            <div className="rounded-3xl border border-foreground/10 bg-card p-6 shadow-sm">
-              <h2 className="text-xl font-semibold">Chat experience</h2>
-              <p className="mt-1 text-sm text-foreground/70">
-                These options affect behavior in chat and thread browsing.
-              </p>
-
-              <div className="mt-5 space-y-3">
-                <ToggleSwitch
-                  checked={draftUiPrefs.supportiveReminders}
-                  onChange={() =>
-                    setDraftUiPrefs((v) => ({
-                      ...v,
-                      supportiveReminders: !v.supportiveReminders,
-                    }))
-                  }
-                  label="Supportive reminders"
-                  description="Let Waypoint add gentle coping reminders like breathing, grounding, pausing, or taking one small next step."
-                />
-
-                <ToggleSwitch
-                  checked={draftUiPrefs.alwaysShowCrisisLink}
-                  onChange={() =>
-                    setDraftUiPrefs((v) => ({
-                      ...v,
-                      alwaysShowCrisisLink: !v.alwaysShowCrisisLink,
-                    }))
-                  }
-                  label="Crisis resources link"
-                  description="Include Philippines emergency and crisis hotline guidance more consistently in emotional safety responses."
-                />
-
-                <ToggleSwitch
-                  checked={draftUiPrefs.enterToSend}
-                  onChange={() =>
-                    setDraftUiPrefs((v) => ({
-                      ...v,
-                      enterToSend: !v.enterToSend,
-                    }))
-                  }
-                  label="Enter to send"
-                  description="Press Enter to send. Use Shift + Enter for a new line."
-                />
-
-                <ToggleSwitch
-                  checked={draftUiPrefs.showTimestamps}
-                  onChange={() =>
-                    setDraftUiPrefs((v) => ({
-                      ...v,
-                      showTimestamps: !v.showTimestamps,
-                    }))
-                  }
-                  label="Show timestamps"
-                  description="Display date and time stamps in your conversations."
-                />
-
-                <ToggleSwitch
-                  checked={draftUiPrefs.compactThreads}
-                  onChange={() =>
-                    setDraftUiPrefs((v) => ({
-                      ...v,
-                      compactThreads: !v.compactThreads,
-                    }))
-                  }
-                  label="Compact thread list"
-                  description="Use a tighter layout for the thread sidebar."
-                />
-
-                <ToggleSwitch
-                  checked={draftUiPrefs.reduceMotion}
-                  onChange={() =>
-                    setDraftUiPrefs((v) => ({
-                      ...v,
-                      reduceMotion: !v.reduceMotion,
-                    }))
-                  }
-                  label="Reduce motion"
-                  description="Limit animations and transitions for a calmer interface."
-                />
-              </div>
-            </div>
-          </Card>
-
-          <Card>
-            <div className="rounded-3xl border border-foreground/10 bg-card p-6 shadow-sm">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <h2 className="text-xl font-semibold">Save your changes</h2>
-                  <p className="text-sm text-foreground/70">
-                    Leaving without saving restores your last saved settings.
+          <div className="mt-6 grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
+            <Card>
+              <div>
+                <div className="mb-6">
+                  <h2 className="text-xl font-semibold tracking-tight">
+                    Appearance
+                  </h2>
+                  <p className="mt-1 text-sm text-foreground/70">
+                    Changes preview instantly on this page. They only become saved
+                    when you press Save changes.
                   </p>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2">
+                <div className="space-y-6">
+                  <section>
+                    <h3 className="text-sm font-semibold uppercase tracking-[0.14em] text-foreground/55">
+                      Theme
+                    </h3>
+                    <p className="mt-1 text-sm text-foreground/70">
+                      Light, dark gray, or match your device.
+                    </p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {themeOptions.map((v) => (
+                        <button
+                          key={v}
+                          type="button"
+                          onClick={() =>
+                            setDraftSettings((s) => ({ ...s, theme: v }))
+                          }
+                          className={pill(draftSettings.theme === v)}
+                        >
+                          {v[0].toUpperCase() + v.slice(1)}
+                        </button>
+                      ))}
+                    </div>
+                  </section>
+
+                  <section>
+                    <h3 className="text-sm font-semibold uppercase tracking-[0.14em] text-foreground/55">
+                      Tone
+                    </h3>
+                    <p className="mt-1 text-sm text-foreground/70">
+                      Preferred response style.
+                    </p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {toneOptions.map((v) => (
+                        <button
+                          key={v}
+                          type="button"
+                          onClick={() =>
+                            setDraftSettings((s) => ({ ...s, tone: v }))
+                          }
+                          className={pill(draftSettings.tone === v)}
+                        >
+                          {v === "gentle"
+                            ? "Gentle"
+                            : v === "calm"
+                            ? "Calm"
+                            : "Direct"}
+                        </button>
+                      ))}
+                    </div>
+                  </section>
+
+                  <section>
+                    <h3 className="text-sm font-semibold uppercase tracking-[0.14em] text-foreground/55">
+                      Font size
+                    </h3>
+                    <p className="mt-1 text-sm text-foreground/70">
+                      Adjust text size for comfortable reading.
+                    </p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {sizeOptions.map((v) => (
+                        <button
+                          key={v}
+                          type="button"
+                          onClick={() =>
+                            setDraftSettings((s) => ({ ...s, font_size: v }))
+                          }
+                          className={pill(draftSettings.font_size === v)}
+                        >
+                          {v.toUpperCase()}
+                        </button>
+                      ))}
+                    </div>
+                  </section>
+
+                  <section>
+                    <h3 className="text-sm font-semibold uppercase tracking-[0.14em] text-foreground/55">
+                      Font style
+                    </h3>
+                    <p className="mt-1 text-sm text-foreground/70">
+                      Reading-friendly fonts with clearer visual differences.
+                    </p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {fontOptions.map((v) => (
+                        <button
+                          key={v}
+                          type="button"
+                          onClick={() =>
+                            setDraftSettings((s) => ({ ...s, font_style: v }))
+                          }
+                          className={pill(draftSettings.font_style === v)}
+                        >
+                          {v === "system"
+                            ? "System"
+                            : v === "lexend"
+                            ? "Lexend"
+                            : "Atkinson"}
+                        </button>
+                      ))}
+                    </div>
+                  </section>
+
+                  <section>
+                    <h3 className="text-sm font-semibold uppercase tracking-[0.14em] text-foreground/55">
+                      Chat experience
+                    </h3>
+                    <p className="mt-1 text-sm text-foreground/70">
+                      These options affect behavior in chat and thread browsing.
+                    </p>
+
+                    <div className="mt-3 space-y-3">
+                      <ToggleSwitch
+                        checked={draftUiPrefs.supportiveReminders}
+                        onChange={() =>
+                          setDraftUiPrefs((v) => ({
+                            ...v,
+                            supportiveReminders: !v.supportiveReminders,
+                          }))
+                        }
+                        label="Supportive reminders"
+                        description="Let Waypoint add gentle coping reminders like breathing, grounding, pausing, or taking one small next step."
+                      />
+
+                      <ToggleSwitch
+                        checked={draftUiPrefs.alwaysShowCrisisLink}
+                        onChange={() =>
+                          setDraftUiPrefs((v) => ({
+                            ...v,
+                            alwaysShowCrisisLink: !v.alwaysShowCrisisLink,
+                          }))
+                        }
+                        label="Crisis resources link"
+                        description="Include Philippines emergency and crisis hotline guidance more consistently in emotional safety responses."
+                      />
+
+                      <ToggleSwitch
+                        checked={draftUiPrefs.enterToSend}
+                        onChange={() =>
+                          setDraftUiPrefs((v) => ({
+                            ...v,
+                            enterToSend: !v.enterToSend,
+                          }))
+                        }
+                        label="Enter to send"
+                        description="Press Enter to send. Use Shift + Enter for a new line."
+                      />
+
+                      <ToggleSwitch
+                        checked={draftUiPrefs.showTimestamps}
+                        onChange={() =>
+                          setDraftUiPrefs((v) => ({
+                            ...v,
+                            showTimestamps: !v.showTimestamps,
+                          }))
+                        }
+                        label="Show timestamps"
+                        description="Display date and time stamps in your conversations."
+                      />
+
+                      <ToggleSwitch
+                        checked={draftUiPrefs.compactThreads}
+                        onChange={() =>
+                          setDraftUiPrefs((v) => ({
+                            ...v,
+                            compactThreads: !v.compactThreads,
+                          }))
+                        }
+                        label="Compact thread list"
+                        description="Use a tighter layout for the thread sidebar."
+                      />
+
+                      <ToggleSwitch
+                        checked={draftUiPrefs.reduceMotion}
+                        onChange={() =>
+                          setDraftUiPrefs((v) => ({
+                            ...v,
+                            reduceMotion: !v.reduceMotion,
+                          }))
+                        }
+                        label="Reduce motion"
+                        description="Limit animations and transitions for a calmer interface."
+                      />
+                    </div>
+                  </section>
+                </div>
+              </div>
+            </Card>
+
+            <div className="space-y-6">
+              <Card>
+                <h2 className="text-lg font-semibold">Live preview</h2>
+                <p className="mt-1 text-sm text-foreground/70">
+                  This updates instantly based on your draft settings.
+                </p>
+
+                <div className="mt-4 rounded-3xl border border-black/6 bg-gradient-to-br from-white to-emerald-50/60 p-4 shadow-sm dark:border-white/8 dark:from-[#2b313a] dark:to-[#262b33]">
+                  <div className="text-xs font-semibold uppercase tracking-[0.16em] text-foreground/50">
+                    Waypoint preview
+                  </div>
+
+                  <div className="mt-3 rounded-2xl bg-white px-4 py-3 text-sm text-slate-800 shadow-sm dark:bg-[#313743] dark:text-slate-100">
+                    {previewTone}
+                  </div>
+
+                  <div className="mt-3 rounded-2xl bg-emerald-100 px-4 py-3 text-sm text-emerald-950 shadow-sm dark:bg-emerald-500/16 dark:text-emerald-100">
+                    I’ve had a lot on my mind lately.
+                  </div>
+                </div>
+              </Card>
+
+              <Card>
+                <h2 className="text-lg font-semibold">Save your changes</h2>
+                <p className="mt-1 text-sm text-foreground/70">
+                  Leaving without saving restores your last saved settings.
+                </p>
+
+                <div className="mt-4 flex flex-wrap items-center gap-3">
                   <button
                     type="button"
                     onClick={saveAll}
-                    className="rounded-xl bg-green-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-green-700"
+                    className="rounded-full bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-300"
                   >
                     {status === "saving" ? "Saving…" : "Save changes"}
                   </button>
@@ -444,56 +483,56 @@ export default function SettingsPage() {
                     <button
                       type="button"
                       onClick={revertDraftToSaved}
-                      className="rounded-xl border border-foreground/15 px-4 py-2 text-sm transition hover:bg-foreground/5"
+                      className="rounded-full border border-foreground/10 px-4 py-2 text-sm font-medium transition hover:bg-foreground/5 dark:border-white/10 dark:hover:bg-white/6"
                     >
                       Discard changes
                     </button>
                   ) : null}
 
                   {status === "saved" ? (
-                    <span className="text-sm text-green-600 dark:text-green-300">
+                    <span className="text-sm font-medium text-emerald-700 dark:text-emerald-300">
                       Saved!
                     </span>
                   ) : null}
 
                   {status === "error" ? (
-                    <span className="text-sm text-red-600 dark:text-red-300">
+                    <span className="text-sm font-medium text-rose-700 dark:text-rose-300">
                       Couldn’t save your settings.
                     </span>
                   ) : null}
                 </div>
-              </div>
+
+                <div className="mt-5">
+                  <DisclaimerBox>
+                    <strong>Important:</strong> Waypoint is not a medical service.
+                    It does not diagnose or prescribe. If you are in immediate
+                    danger, contact local emergency services or a trusted person
+                    right away.
+                  </DisclaimerBox>
+                </div>
+
+                <div className="mt-5">
+                  <button
+                    type="button"
+                    onClick={() => handleAttemptNavigate("/chat")}
+                    className="rounded-full border border-foreground/10 px-4 py-2 text-sm font-medium transition hover:bg-foreground/5 dark:border-white/10 dark:hover:bg-white/6"
+                  >
+                    Back to chat
+                  </button>
+                </div>
+              </Card>
             </div>
-          </Card>
+          </div>
 
-          <DisclaimerBox>
-            <div className="rounded-2xl border border-amber-300/40 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-200/15 dark:bg-amber-300/10 dark:text-amber-100">
-              Important: Waypoint is not a medical service. It does not diagnose
-              or prescribe.
-            </div>
-          </DisclaimerBox>
-        </div>
-
-        <div className="mt-6 flex gap-2">
-          <button
-            type="button"
-            onClick={() => handleAttemptNavigate("/chat")}
-            className="rounded-xl border border-foreground/15 px-4 py-2 text-sm transition hover:bg-foreground/5"
-          >
-            Back to chat
-          </button>
-        </div>
-
-        <div className="mt-auto pt-8">
           <Footer />
         </div>
       </main>
 
       <ConfirmModal
         open={showUnsavedConfirm}
-        title="Leave without saving?"
-        description="Your previewed changes will be discarded and your last saved settings will be restored."
-        confirmLabel="Leave page"
+        title="Leave this page without saving?"
+        description="Your unsaved changes will be discarded."
+        confirmLabel="Discard changes"
         cancelLabel="Stay here"
         onCancel={() => {
           setShowUnsavedConfirm(false);
@@ -502,11 +541,9 @@ export default function SettingsPage() {
         onConfirm={() => {
           setShowUnsavedConfirm(false);
           revertDraftToSaved();
-
           if (pendingPath) {
             router.push(pendingPath);
           }
-
           setPendingPath(null);
         }}
       />

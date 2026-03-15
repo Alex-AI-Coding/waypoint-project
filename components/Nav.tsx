@@ -16,14 +16,6 @@ export default function Nav({
   const [showSettingsConfirm, setShowSettingsConfirm] = useState(false);
   const logoutFormRef = useRef<HTMLFormElement | null>(null);
 
-  const base =
-    "rounded-lg px-3 py-1 text-sm transition focus:outline-none focus:ring-2 focus:ring-green-200";
-  const active =
-    "bg-green-100 text-green-900 dark:bg-green-900/30 dark:text-green-100";
-  const inactive =
-    "text-green-700 hover:text-green-900 hover:bg-green-100/60 " +
-    "dark:text-green-200 dark:hover:text-white dark:hover:bg-white/10";
-
   const resolvedCurrent =
     current ??
     (pathname?.startsWith("/settings")
@@ -32,42 +24,53 @@ export default function Nav({
       ? "chat"
       : "home");
 
+  const tabBase =
+    "inline-flex items-center rounded-full px-3.5 py-2 text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-emerald-300/70";
+  const active =
+    "bg-emerald-100 text-emerald-950 shadow-sm dark:bg-emerald-500/14 dark:text-emerald-100 dark:ring-1 dark:ring-emerald-400/18";
+  const inactive =
+    "text-emerald-800 hover:bg-emerald-100/80 hover:text-emerald-950 dark:text-emerald-100/80 dark:hover:bg-white/6 dark:hover:text-white";
+
   return (
     <>
-      <nav className="flex flex-wrap items-center gap-2">
-        <Link
-          href="/chat"
-          className={`${base} ${resolvedCurrent === "chat" ? active : inactive}`}
-        >
-          Chat
-        </Link>
+      <div className="mx-auto mt-4 flex w-full max-w-6xl items-center justify-between gap-3 rounded-2xl border border-black/6 bg-white/80 px-3 py-3 shadow-[0_8px_30px_rgba(15,23,42,0.05)] backdrop-blur dark:border-white/8 dark:bg-[#272c34]/90 dark:shadow-[0_10px_35px_rgba(0,0,0,0.22)]">
+        <div className="flex items-center gap-2">
+          <Link
+            href="/chat"
+            className={`${tabBase} ${
+              resolvedCurrent === "chat" ? active : inactive
+            }`}
+          >
+            Chat
+          </Link>
 
-        <button
-          type="button"
-          onClick={() => setShowSettingsConfirm(true)}
-          className={`${base} ${
-            resolvedCurrent === "settings" ? active : inactive
-          }`}
-        >
-          Settings
-        </button>
+          <button
+            type="button"
+            onClick={() => setShowSettingsConfirm(true)}
+            className={`${tabBase} ${
+              resolvedCurrent === "settings" ? active : inactive
+            }`}
+          >
+            Settings
+          </button>
+        </div>
 
-        <form ref={logoutFormRef} action={logoutAction} className="ml-auto">
+        <form ref={logoutFormRef} action={logoutAction}>
           <button
             type="button"
             onClick={() => setShowLogoutConfirm(true)}
-            className={`${base} ${inactive}`}
+            className="rounded-full border border-foreground/10 px-3.5 py-2 text-sm font-medium text-foreground/80 transition hover:bg-foreground/5 dark:border-white/10 dark:hover:bg-white/6"
           >
             Logout
           </button>
         </form>
-      </nav>
+      </div>
 
       <ConfirmModal
         open={showSettingsConfirm}
         title="Open settings?"
-        description="Your appearance changes preview instantly in Settings. Saved changes will still need you to press Save changes."
-        confirmLabel="Go to settings"
+        description="Your current chat will stay right where it is."
+        confirmLabel="Open settings"
         cancelLabel="Stay here"
         onCancel={() => setShowSettingsConfirm(false)}
         onConfirm={() => {
@@ -79,8 +82,8 @@ export default function Nav({
       <ConfirmModal
         open={showLogoutConfirm}
         title="Log out of Waypoint?"
-        description="You’ll need to sign in again to continue your chats and saved settings."
-        confirmLabel="Logout"
+        description="You can always log back in later."
+        confirmLabel="Log out"
         cancelLabel="Cancel"
         onCancel={() => setShowLogoutConfirm(false)}
         onConfirm={() => {

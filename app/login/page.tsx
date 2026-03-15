@@ -5,31 +5,21 @@ import LoginForm from "./LoginForm";
 
 export default function LoginPage() {
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <div className="mx-auto flex min-h-screen max-w-3xl items-center justify-center px-4 py-10">
-        <div className="w-full">
-          <Header />
+    <main className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(16,185,129,0.08),transparent_32%),var(--background)] px-4 pb-10">
+      <div className="mx-auto max-w-4xl pt-8">
+        <Header
+          title="Login"
+          subtitle="Welcome back. Please sign in to continue."
+        />
 
-          <div className="mt-6">
-            <Card>
-              <div className="p-6 sm:p-8">
-                <h2 className="text-lg font-semibold">Login</h2>
-                <p className="mt-1 text-sm opacity-80">
-                  Welcome back. Please sign in to continue.
-                </p>
-
-                <div className="mt-5">
-                  <LoginForm />
-                </div>
-              </div>
-            </Card>
-          </div>
-
-          <div className="mt-8">
-            <Footer />
-          </div>
+        <div className="mt-6">
+          <Card className="mx-auto max-w-xl">
+            <LoginForm />
+          </Card>
         </div>
+
+        <Footer />
       </div>
-    </div>
+    </main>
   );
 }

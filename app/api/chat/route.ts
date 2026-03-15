@@ -4,14 +4,16 @@ export const runtime = "nodejs";
 
 type Body = {
   message?: string;
+  threadId?: string;
 };
 
-type TonePref = "calm" | "gentle" | "direct";
+/* ===============================
+   SAFETY LAYER
+================================ */
 
 const CRISIS_PATTERNS: RegExp[] = [
   /suicide/i,
   /kill myself/i,
-  /killing myself/i,
   /end (my )?life/i,
   /self[- ]?harm/i,
   /cut myself/i,
@@ -24,14 +26,11 @@ const CRISIS_PATTERNS: RegExp[] = [
   /do not want to live/i,
   /tired of living/i,
   /can't keep going/i,
-  /i am going to die/i,
-  /i want to disappear/i,
-  /i might do something to myself/i,
-  /magpapakamatay/i,
-  /gusto ko nang mamatay/i,
-  /ayoko nang mabuhay/i,
-  /sasaktan ko ang sarili ko/i,
 ];
+
+function isCrisisMessage(message: string): boolean {
+  return CRISIS_PATTERNS.some((pattern) => pattern.test(message));
+}
 
 const SOFT_DISTRESS_PATTERNS: RegExp[] = [
   /hopeless/i,
@@ -44,122 +43,35 @@ const SOFT_DISTRESS_PATTERNS: RegExp[] = [
   /i can't handle this/i,
   /i feel lost/i,
   /i'm struggling/i,
-  /i am struggling/i,
-  /burned out/i,
-  /pagod na pagod/i,
-  /nahihirapan na ako/i,
-  /di ko na kaya/i,
-  /hindi ko na kaya/i,
 ];
-
-const MEDICAL_PRESCRIBING_PATTERNS: RegExp[] = [
-  /prescribe/i,
-  /prescription/i,
-  /what medicine should i take/i,
-  /what medication should i take/i,
-  /what drug should i take/i,
-  /what should i take for/i,
-  /dosage/i,
-  /dose/i,
-  /how many mg/i,
-  /\b\d+\s?mg\b/i,
-  /take twice a day/i,
-  /take once a day/i,
-  /antidepressant/i,
-  /anti[- ]?anxiety medication/i,
-  /sleeping pills?/i,
-  /painkillers?/i,
-  /anong gamot/i,
-  /gamot para sa/i,
-  /ilang mg/i,
-  /pwede bang uminom ng/i,
-  /reseta/i,
-];
-
-function isCrisisMessage(message: string): boolean {
-  return CRISIS_PATTERNS.some((pattern) => pattern.test(message));
-}
 
 function isSoftDistress(message: string): boolean {
   return SOFT_DISTRESS_PATTERNS.some((pattern) => pattern.test(message));
 }
 
-function isMedicineRequest(message: string): boolean {
-  return MEDICAL_PRESCRIBING_PATTERNS.some((pattern) => pattern.test(message));
-}
-
-function getPhilippinesCrisisBlock(): string {
-  return [
-    "If you are in the Philippines and you may act on these thoughts or are in immediate danger, call 911 now.",
-    "You can also contact the NCMH Crisis Hotline, available 24/7:",
-    "• 1553",
-    "• (02) 7-989-8727",
-    "• 0917-899-8727",
-  ].join("\n");
-}
-
-function getSoftSupportPreface(alwaysShowCrisisLink: boolean): string {
-  const preface = [
-    "I’m really sorry things feel this heavy right now.",
-    "You don’t have to carry all of this alone.",
-    "We can slow things down and focus on one small step together.",
-  ].join(" ");
-
-  if (!alwaysShowCrisisLink) return preface;
-
-  return [
-    preface,
-    "",
-    "If you’re in the Philippines and you start feeling unsafe or worried you might act on these feelings, call 911 or contact the NCMH Crisis Hotline:",
-    "• 1553",
-    "• (02) 7-989-8727",
-    "• 0917-899-8727",
-  ].join("\n");
-}
-
 function getCrisisResponse(): string {
-  return [
-    "I’m really sorry that you're feeling this much pain right now.",
-    "You do not have to handle this alone.",
-    "Please move closer to another person if you can, or call someone you trust and tell them you need help staying safe right now.",
-    "",
-    getPhilippinesCrisisBlock(),
-    "",
-    "If you want, send me just one word right now: SAFE, UNSAFE, or ALONE.",
-  ].join("\n");
+  return `I'm really sorry that you're feeling this much pain right now. You don't have to handle this alone. If you're in immediate danger or feel like you might act on these thoughts, please contact your local emergency services right now. If you can, consider reaching out to someone you trust — a friend, family member, or someone close to you.
+
+If you're in the Philippines, you can call or text 0966-351-4518 (Globe) or 0908-639-2672 (Smart) to reach the Suicide & Crisis Lifeline. It's free and available 24/7. If you're outside the Philippines, I can help you look for a crisis support number in your country.
+
+I'm here to listen, but you deserve real-time human support too.`;
 }
 
-function getNoPrescribingResponse(): string {
-  return [
-    "I can’t prescribe medicine or tell you what dosage to take.",
-    "For medication questions, it’s safest to speak with a licensed doctor or pharmacist.",
-    "If you want, I can still help in safer ways — for example, by helping you describe your symptoms clearly, list questions for a doctor, or suggest non-medication coping steps.",
-  ].join(" ");
-}
+/* ===============================
+   SYSTEM PROMPT
+================================ */
 
-function getSoftDistressResponse(alwaysShowCrisisLink: boolean): string {
-  return [
-    getSoftSupportPreface(alwaysShowCrisisLink),
-    "",
-    "Thank you for telling me that.",
-    "Would it help if we slow this down and focus on just one small thing you can do in the next 10 minutes—like sitting near someone, drinking water, or taking a few steady breaths?",
-  ].join("\n");
-}
+type TonePref = "calm" | "gentle" | "direct";
 
 function buildSystemPrompt(options?: {
   softDistress?: boolean;
   tone?: TonePref;
-  supportiveReminders?: boolean;
-  alwaysShowCrisisLink?: boolean;
 }) {
   const base = [
     "You are Waypoint, a supportive mental health companion chatbot.",
-    "You are NOT a medical service.",
-    "Do not diagnose.",
+    "You are NOT a medical service. Do not diagnose.",
     "Do not prescribe.",
-    "Do not recommend prescription medicines, dosages, frequencies, or treatment regimens.",
-    "If the user asks for medicines or dosages, refuse briefly and suggest consulting a licensed doctor or pharmacist.",
-    "Ask one gentle follow-up question unless the user is in crisis.",
+    "Ask one gentle follow-up question.",
     "If the user mentions self-harm or suicide, encourage contacting local emergency services and a trusted person immediately.",
   ];
 
@@ -177,26 +89,12 @@ function buildSystemPrompt(options?: {
     );
   }
 
-  if (options?.supportiveReminders) {
-    base.push(
-      "When appropriate, you may offer small supportive reminders like breathing, grounding, drinking water, pausing, or taking one small next step."
-    );
-  } else {
-    base.push(
-      "Do not add extra supportive reminder phrases unless the user directly asks for coping ideas."
-    );
-  }
-
-  if (options?.alwaysShowCrisisLink) {
-    base.push(
-      "For soft emotional distress, respond with empathy first, then gentle grounding or coping support. Do not sound robotic, legalistic, or overly clinical.",
-      "For soft distress, if crisis resources are included, place them after the supportive response, not before it.",
-      "For hard suicide or self-harm risk, prioritize immediate safety and crisis hotline guidance.",
-    );
-  }
-
   return base.join(" ");
 }
+
+/* ===============================
+   OLLAMA STREAM
+================================ */
 
 async function ollamaChatStream(
   messages: Array<{ role: string; content: string }>
@@ -206,7 +104,9 @@ async function ollamaChatStream(
 
   const res = await fetch(`${baseUrl}/api/chat`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+    },
     body: JSON.stringify({
       model,
       messages,
@@ -221,6 +121,10 @@ async function ollamaChatStream(
 
   return res.body;
 }
+
+/* ===============================
+   SSE HELPERS
+================================ */
 
 function sseHeaders(extra?: HeadersInit): Headers {
   const h = new Headers(extra);
@@ -246,10 +150,15 @@ function sseStreamFromSingleReply(reply: string): ReadableStream {
   });
 }
 
+/* ===============================
+   POST
+================================ */
+
 export async function POST(req: Request) {
   try {
     const body = (await req.json()) as Body;
     const message = (body.message ?? "").trim();
+    const threadId = (body.threadId ?? "").trim();
 
     const cookieResponse = new Response();
 
@@ -264,13 +173,6 @@ export async function POST(req: Request) {
 
     if (isCrisisMessage(message)) {
       const stream = sseStreamFromSingleReply(getCrisisResponse());
-      return new Response(stream, {
-        headers: sseHeaders(cookieResponse.headers),
-      });
-    }
-
-    if (isMedicineRequest(message)) {
-      const stream = sseStreamFromSingleReply(getNoPrescribingResponse());
       return new Response(stream, {
         headers: sseHeaders(cookieResponse.headers),
       });
@@ -313,13 +215,11 @@ export async function POST(req: Request) {
     const user = userData.user ?? null;
 
     let tonePref: TonePref = "calm";
-    let supportiveReminders = true;
-    let alwaysShowCrisisLink = true;
 
     if (user) {
       const { data: settingsRow } = await supabase
         .from("user_settings")
-        .select("tone, supportive_reminders, always_show_crisis_link")
+        .select("tone")
         .eq("user_id", user.id)
         .single();
 
@@ -327,29 +227,23 @@ export async function POST(req: Request) {
       if (t === "calm" || t === "gentle" || t === "direct") {
         tonePref = t;
       }
-
-      supportiveReminders = settingsRow?.supportive_reminders ?? true;
-      alwaysShowCrisisLink = settingsRow?.always_show_crisis_link ?? true;
     }
-
-    if (softDistress) {
-  const stream = sseStreamFromSingleReply(
-    getSoftDistressResponse(alwaysShowCrisisLink)
-  );
-  return new Response(stream, {
-    headers: sseHeaders(cookieResponse.headers),
-  });
-}
 
     let history: Array<{ role: "user" | "assistant"; content: string }> = [];
 
     if (user) {
-      const { data, error } = await supabase
+      let query = supabase
         .from("messages")
         .select("role, content, created_at")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false })
         .limit(10);
+
+      if (threadId) {
+        query = query.eq("thread_id", threadId);
+      }
+
+      const { data, error } = await query;
 
       if (!error && data) {
         history = data
@@ -357,7 +251,7 @@ export async function POST(req: Request) {
           .reverse()
           .map((row) => ({
             role: row.role as "user" | "assistant",
-            content: row.content,
+            content: String(row.content ?? ""),
           }));
       }
     }
@@ -365,20 +259,18 @@ export async function POST(req: Request) {
     const system = buildSystemPrompt({
       softDistress,
       tone: tonePref,
-      supportiveReminders,
-      alwaysShowCrisisLink,
     });
-
-    const userContent = message;
 
     const ollamaMessages = [
       { role: "system", content: system },
-      ...history.map((m) => ({ role: m.role, content: m.content })),
-      { role: "user", content: userContent },
+      ...history.map((m) => ({
+        role: m.role,
+        content: m.content,
+      })),
+      { role: "user", content: message },
     ];
 
     const ollamaBody = await ollamaChatStream(ollamaMessages);
-
     const encoder = new TextEncoder();
     const decoder = new TextDecoder();
 
@@ -393,7 +285,6 @@ export async function POST(req: Request) {
             if (done) break;
 
             buffer += decoder.decode(value, { stream: true });
-
             const lines = buffer.split("\n");
             buffer = lines.pop() ?? "";
 
@@ -417,7 +308,9 @@ export async function POST(req: Request) {
                   controller.close();
                   return;
                 }
-              } catch {}
+              } catch {
+                // ignore malformed / partial NDJSON
+              }
             }
           }
 
@@ -435,7 +328,7 @@ export async function POST(req: Request) {
     });
   } catch {
     const stream = sseStreamFromSingleReply(
-      "I couldn’t reach the AI right now. If you want, tell me what you’re feeling and we’ll take it step by step."
+      "I couldn’t reach the AI right now.\nTell me what’s going on, and we’ll take it step by step."
     );
 
     return new Response(stream, {

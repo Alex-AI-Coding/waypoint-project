@@ -2,12 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-
+import Link from "next/link";
 import TextInput from "@/components/TextInput";
 import { PrimaryButton } from "@/components/Button";
 import DisclaimerBox from "@/components/DisclaimerBox";
 import { createClient } from "@/lib/supabase/browser";
-import Link from "next/link";
 
 export default function RegisterForm() {
   const router = useRouter();
@@ -35,12 +34,15 @@ export default function RegisterForm() {
     }
 
     setIsLoading(true);
+
     try {
       const supabase = createClient();
       const { error: signUpError } = await supabase.auth.signUp({
         email,
         password,
-        options: { data: { name } },
+        options: {
+          data: { name },
+        },
       });
 
       if (signUpError) {
@@ -58,56 +60,66 @@ export default function RegisterForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-4">
-      {error && (
-        <div className="rounded-xl border border-red-300 bg-red-50/60 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-200">
+    <form onSubmit={onSubmit} className="space-y-5">
+      {error ? (
+        <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-400/20 dark:bg-rose-500/10 dark:text-rose-200">
           {error}
         </div>
-      )}
+      ) : null}
 
       <div>
-        <label className="mb-1 block text-sm font-medium">Name</label>
-        <TextInput name="name" placeholder="Your name (optional)" />
+        <label className="mb-2 block text-sm font-medium text-foreground/80">
+          Name
+        </label>
+        <TextInput name="name" type="text" placeholder="Your name" />
       </div>
 
       <div>
-        <label className="mb-1 block text-sm font-medium">Email</label>
+        <label className="mb-2 block text-sm font-medium text-foreground/80">
+          Email
+        </label>
         <TextInput name="email" type="email" placeholder="you@example.com" />
       </div>
 
       <div>
-        <label className="mb-1 block text-sm font-medium">Password</label>
-        <TextInput name="password" type="password" placeholder="At least 8 characters" />
+        <label className="mb-2 block text-sm font-medium text-foreground/80">
+          Password
+        </label>
+        <TextInput
+          name="password"
+          type="password"
+          placeholder="Create a password"
+        />
       </div>
 
       <div>
-        <label className="mb-1 block text-sm font-medium">
+        <label className="mb-2 block text-sm font-medium text-foreground/80">
           Confirm password
         </label>
         <TextInput
           name="confirmPassword"
           type="password"
-          placeholder="Re-type your password"
+          placeholder="Re-enter your password"
         />
       </div>
 
-      <PrimaryButton type="submit" className="w-full" disabled={isLoading}>
+      <PrimaryButton type="submit" disabled={isLoading} className="w-full">
         {isLoading ? "Creating account..." : "Create account"}
       </PrimaryButton>
 
-<div className="text-center text-sm">
-  <span className="opacity-80">Already have an account? </span>
-  <Link
-    href="/login"
-    className="text-green-700 hover:text-green-900 hover:underline dark:text-green-200 dark:hover:text-white"
-  >
-    Login
-  </Link>
-</div>
+      <div className="text-sm">
+        <span className="text-foreground/65">Already have an account? </span>
+        <Link
+          href="/login"
+          className="font-medium text-emerald-700 transition hover:text-emerald-800 dark:text-emerald-300 dark:hover:text-emerald-200"
+        >
+          Login
+        </Link>
+      </div>
 
       <DisclaimerBox>
-        Important: Waypoint is not a medical service. It does not diagnose or
-        prescribe.
+        <strong>Important:</strong> Waypoint is not a medical service. It does
+        not diagnose or prescribe.
       </DisclaimerBox>
     </form>
   );
