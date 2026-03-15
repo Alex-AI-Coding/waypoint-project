@@ -45,33 +45,14 @@ export function applySettingsToDocument(settings: UserSettings) {
 
   const prefersDark =
     typeof window !== "undefined" &&
-    window.matchMedia &&
+    typeof window.matchMedia === "function" &&
     window.matchMedia("(prefers-color-scheme: dark)").matches;
 
   const isDark =
     settings.theme === "dark" ||
     (settings.theme === "system" && prefersDark);
 
-  if (isDark) {
-    root.classList.add("dark");
-  } else {
-    root.classList.remove("dark");
-  }
-
-  let px = 16;
-  if (settings.font_size === "sm") px = 14;
-  if (settings.font_size === "md") px = 16;
-  if (settings.font_size === "lg") px = 18;
-  if (settings.font_size === "xl") px = 20;
-  root.style.fontSize = `${px}px`;
-
-  if (settings.font_style === "system") {
-    root.style.fontFamily = "";
-  } else if (settings.font_style === "lexend") {
-    root.style.fontFamily =
-      "Lexend, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif";
-  } else if (settings.font_style === "atkinson") {
-    root.style.fontFamily =
-      "Atkinson Hyperlegible, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif";
-  }
+  root.classList.toggle("dark", isDark);
+  root.setAttribute("data-font-size", settings.font_size);
+  root.setAttribute("data-font-style", settings.font_style);
 }

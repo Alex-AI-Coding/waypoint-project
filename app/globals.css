@@ -1,28 +1,48 @@
 @import "tailwindcss";
+
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --card: #ffffff;
+  --card-foreground: #171717;
+  --muted: #f4f4f5;
+  --muted-foreground: #5b6170;
+  --border: rgba(23, 23, 23, 0.1);
+  --bubble-user: #dcfce7;
+  --bubble-assistant: #ffffff;
+  --thread-active: rgba(34, 197, 94, 0.12);
 
-  /* Default reading prefs */
   font-size: 16px;
-  font-family: var(--font-geist-sans), system-ui, -apple-system, Segoe UI, Roboto,
+  font-family: var(--font-geist-sans), system-ui, -apple-system, "Segoe UI", Roboto,
     Arial, sans-serif;
 }
 
 html.dark {
-  --background: #09090b; /* near zinc-950 */
-  --foreground: #fafafa;
+  --background: #1f2329; /* dark gray instead of near-black */
+  --foreground: #f5f7fb;
+  --card: #272c34;
+  --card-foreground: #f5f7fb;
+  --muted: #2f3540;
+  --muted-foreground: #c7ced8;
+  --border: rgba(255, 255, 255, 0.1);
+  --bubble-user: #1f5a38;
+  --bubble-assistant: #2a3038;
+  --thread-active: rgba(74, 222, 128, 0.16);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
 
-  /* Tailwind hooks */
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+}
+
+html,
+body {
+  min-height: 100%;
 }
 
 body {
@@ -53,7 +73,7 @@ body {
 @keyframes message-in {
   from {
     opacity: 0;
-    transform: translateY(6px) scale(0.98);
+    transform: translateY(6px) scale(0.985);
   }
   to {
     opacity: 1;
@@ -96,12 +116,15 @@ body {
 :root[data-font-size="sm"] {
   font-size: 14px;
 }
+
 :root[data-font-size="md"] {
   font-size: 16px;
 }
+
 :root[data-font-size="lg"] {
   font-size: 18px;
 }
+
 :root[data-font-size="xl"] {
   font-size: 20px;
 }
@@ -110,30 +133,54 @@ body {
    Font style switching
 -------------------------------- */
 
-/* System */
 :root[data-font-style="system"] {
-  font-family: var(--font-geist-sans), system-ui, -apple-system, Segoe UI, Roboto,
+  font-family: var(--font-geist-sans), system-ui, -apple-system, "Segoe UI", Roboto,
     Arial, sans-serif;
-}
-
-/* Lexend */
-:root[data-font-style="lexend"] {
-  font-family: var(--font-lexend), var(--font-geist-sans), system-ui, sans-serif;
-}
-
-/* Atkinson Hyperlegible */
-:root[data-font-style="atkinson"] {
-  font-family: var(--font-atkinson), var(--font-geist-sans), system-ui,
-    sans-serif;
-}
-
-/* Optional: make Tailwind's font-sans follow your selected style too */
-:root[data-font-style="system"] {
   --font-sans: var(--font-geist-sans);
 }
+
 :root[data-font-style="lexend"] {
+  font-family: var(--font-lexend), var(--font-geist-sans), system-ui, sans-serif;
   --font-sans: var(--font-lexend);
 }
+
 :root[data-font-style="atkinson"] {
+  font-family: var(--font-atkinson), var(--font-geist-sans), system-ui, sans-serif;
   --font-sans: var(--font-atkinson);
+}
+
+/* Make Lexend and Atkinson visibly different */
+:root[data-font-style="lexend"] body {
+  letter-spacing: 0.01em;
+  font-weight: 500;
+}
+
+:root[data-font-style="atkinson"] body {
+  letter-spacing: 0;
+  font-weight: 400;
+}
+
+:root[data-font-style="lexend"] h1,
+:root[data-font-style="lexend"] h2,
+:root[data-font-style="lexend"] h3 {
+  letter-spacing: -0.01em;
+}
+
+:root[data-font-style="atkinson"] h1,
+:root[data-font-style="atkinson"] h2,
+:root[data-font-style="atkinson"] h3 {
+  letter-spacing: 0;
+}
+
+/* -------------------------------
+   Motion preference
+-------------------------------- */
+
+html[data-reduce-motion="true"] *,
+html[data-reduce-motion="true"] *::before,
+html[data-reduce-motion="true"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
 }
