@@ -137,7 +137,7 @@ function getNoPrescribingResponse(): string {
   ].join(" ");
 }
 
-function getSoftDistressResponse(alwaysShowCrisisLink: boolean, userMessage: string): string {
+function getSoftDistressResponse(alwaysShowCrisisLink: boolean): string {
   return [
     getSoftSupportPreface(alwaysShowCrisisLink),
     "",
@@ -190,8 +190,8 @@ function buildSystemPrompt(options?: {
   if (options?.alwaysShowCrisisLink) {
     base.push(
       "For soft emotional distress, respond with empathy first, then gentle grounding or coping support. Do not sound robotic, legalistic, or overly clinical.",
-"For soft distress, if crisis resources are included, place them after the supportive response, not before it.",
-"For hard suicide or self-harm risk, prioritize immediate safety and crisis hotline guidance.",
+      "For soft distress, if crisis resources are included, place them after the supportive response, not before it.",
+      "For hard suicide or self-harm risk, prioritize immediate safety and crisis hotline guidance.",
     );
   }
 
@@ -334,7 +334,7 @@ export async function POST(req: Request) {
 
     if (softDistress) {
   const stream = sseStreamFromSingleReply(
-    getSoftDistressResponse(alwaysShowCrisisLink, message)
+    getSoftDistressResponse(alwaysShowCrisisLink)
   );
   return new Response(stream, {
     headers: sseHeaders(cookieResponse.headers),
