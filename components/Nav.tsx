@@ -8,8 +8,12 @@ import ConfirmModal from "@/components/ConfirmModal";
 
 export default function Nav({
   current,
+  onChatClick,
+  onSettingsClick,
 }: {
   current?: "home" | "chat" | "settings";
+  onChatClick?: () => void;
+  onSettingsClick?: () => void;
 }) {
   const pathname = usePathname();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
@@ -35,24 +39,48 @@ export default function Nav({
     <>
       <div className="mx-auto mt-4 flex w-full max-w-6xl items-center justify-between gap-3 rounded-2xl border border-black/6 bg-white/80 px-3 py-3 shadow-[0_8px_30px_rgba(15,23,42,0.05)] backdrop-blur dark:border-white/8 dark:bg-[#272c34]/90 dark:shadow-[0_10px_35px_rgba(0,0,0,0.22)]">
         <div className="flex items-center gap-2">
-          <Link
-            href="/chat"
-            className={`${tabBase} ${
-              resolvedCurrent === "chat" ? active : inactive
-            }`}
-          >
-            Chat
-          </Link>
+          {onChatClick ? (
+            <button
+              type="button"
+              onClick={onChatClick}
+              className={`${tabBase} ${
+                resolvedCurrent === "chat" ? active : inactive
+              }`}
+            >
+              Chat
+            </button>
+          ) : (
+            <Link
+              href="/chat"
+              className={`${tabBase} ${
+                resolvedCurrent === "chat" ? active : inactive
+              }`}
+            >
+              Chat
+            </Link>
+          )}
 
-          <button
-            type="button"
-            onClick={() => setShowSettingsConfirm(true)}
-            className={`${tabBase} ${
-              resolvedCurrent === "settings" ? active : inactive
-            }`}
-          >
-            Settings
-          </button>
+          {onSettingsClick ? (
+            <button
+              type="button"
+              onClick={onSettingsClick}
+              className={`${tabBase} ${
+                resolvedCurrent === "settings" ? active : inactive
+              }`}
+            >
+              Settings
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setShowSettingsConfirm(true)}
+              className={`${tabBase} ${
+                resolvedCurrent === "settings" ? active : inactive
+              }`}
+            >
+              Settings
+            </button>
+          )}
         </div>
 
         <form ref={logoutFormRef} action={logoutAction}>

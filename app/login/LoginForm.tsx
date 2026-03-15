@@ -93,7 +93,7 @@ export default function LoginForm() {
 
       <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
         <Link
-          href="#"
+          href="/forgot-password"
           className="text-foreground/65 transition hover:text-foreground"
         >
           Forgot password?

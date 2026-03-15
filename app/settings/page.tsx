@@ -41,7 +41,7 @@ export default function SettingsPage() {
   const [status, setStatus] = useState<Status>("idle");
   const [showUnsavedConfirm, setShowUnsavedConfirm] = useState(false);
   const [pendingPath, setPendingPath] = useState<string | null>(null);
-  const [hasMounted, setHasMounted] = useState(false);
+  const [hasLoadedInitialData, setHasLoadedInitialData] = useState(false);
 
   const themeOptions: ThemePref[] = ["system", "light", "dark"];
   const toneOptions: TonePref[] = ["gentle", "calm", "direct"];
@@ -56,12 +56,6 @@ export default function SettingsPage() {
   }, [savedSettings, draftSettings, savedUiPrefs, draftUiPrefs]);
 
   useEffect(() => {
-    setHasMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (!hasMounted) return;
-
     const localSettings = loadSettingsFromStorage();
     const localUiPrefs = loadUiPrefs();
 
@@ -72,11 +66,11 @@ export default function SettingsPage() {
 
     applySettingsToDocument(localSettings);
     applyUiPrefsToDocument(localUiPrefs);
-  }, [hasMounted]);
+
+    setHasLoadedInitialData(true);
+  }, []);
 
   useEffect(() => {
-    if (!hasMounted) return;
-
     async function loadFromSupabase() {
       try {
         const supabase = createClient();
@@ -95,11 +89,15 @@ export default function SettingsPage() {
 
         const fromDb: UserSettings = {
           theme:
-            data.theme === "light" || data.theme === "dark" || data.theme === "system"
+            data.theme === "light" ||
+            data.theme === "dark" ||
+            data.theme === "system"
               ? data.theme
               : DEFAULT_SETTINGS.theme,
           tone:
-            data.tone === "gentle" || data.tone === "calm" || data.tone === "direct"
+            data.tone === "gentle" ||
+            data.tone === "calm" ||
+            data.tone === "direct"
               ? data.tone
               : DEFAULT_SETTINGS.tone,
           font_size:
@@ -135,18 +133,20 @@ export default function SettingsPage() {
       } catch {}
     }
 
-    loadFromSupabase();
-  }, [hasMounted]);
+    if (hasLoadedInitialData) {
+      loadFromSupabase();
+    }
+  }, [hasLoadedInitialData]);
 
   useEffect(() => {
-    if (!hasMounted) return;
+    if (!hasLoadedInitialData) return;
     applySettingsToDocument(draftSettings);
-  }, [draftSettings, hasMounted]);
+  }, [draftSettings, hasLoadedInitialData]);
 
   useEffect(() => {
-    if (!hasMounted) return;
+    if (!hasLoadedInitialData) return;
     applyUiPrefsToDocument(draftUiPrefs);
-  }, [draftUiPrefs, hasMounted]);
+  }, [draftUiPrefs, hasLoadedInitialData]);
 
   useEffect(() => {
     function handleBeforeUnload(e: BeforeUnloadEvent) {
@@ -231,10 +231,35 @@ export default function SettingsPage() {
     ].join(" ");
   }
 
+  if (!hasLoadedInitialData) {
+    return (
+      <main className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(16,185,129,0.08),transparent_32%),var(--background)] px-4 pb-10">
+        <Nav current="settings" />
+        <div className="mx-auto mt-6 max-w-6xl">
+          <Header
+            title="Settings"
+            subtitle="Comfort-first preferences for your Waypoint space"
+          />
+          <div className="mt-6">
+            <Card>
+              <div className="py-10 text-sm text-foreground/65">
+                Loading your settings…
+              </div>
+            </Card>
+          </div>
+          <Footer />
+        </div>
+      </main>
+    );
+  }
+
   return (
     <>
       <main className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(16,185,129,0.08),transparent_32%),var(--background)] px-4 pb-10">
-        <Nav current="settings" />
+        <Nav
+          current="settings"
+          onChatClick={() => handleAttemptNavigate("/chat")}
+        />
 
         <div className="mx-auto mt-6 max-w-6xl">
           <Header
