@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import TextInput from "@/components/TextInput";
 import { PrimaryButton } from "@/components/Button";
-import DisclaimerBox from "@/components/DisclaimerBox";
 import { createClient } from "@/lib/supabase/browser";
 
 export default function LoginForm() {
@@ -106,11 +105,6 @@ export default function LoginForm() {
           Create an account
         </Link>
       </div>
-
-      <DisclaimerBox>
-        <strong>Important:</strong> Waypoint is not a medical service. It does
-        not diagnose or prescribe.
-      </DisclaimerBox>
     </form>
   );
 }

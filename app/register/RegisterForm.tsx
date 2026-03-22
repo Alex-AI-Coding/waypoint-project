@@ -5,13 +5,14 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import TextInput from "@/components/TextInput";
 import { PrimaryButton } from "@/components/Button";
-import DisclaimerBox from "@/components/DisclaimerBox";
 import { createClient } from "@/lib/supabase/browser";
 
 export default function RegisterForm() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -71,7 +72,7 @@ export default function RegisterForm() {
         <label className="mb-2 block text-sm font-medium text-foreground/80">
           Name
         </label>
-        <TextInput name="name" type="text" placeholder="Your name" />
+        <TextInput name="name" type="text" placeholder="What should we call you?" />
       </div>
 
       <div>
@@ -85,30 +86,52 @@ export default function RegisterForm() {
         <label className="mb-2 block text-sm font-medium text-foreground/80">
           Password
         </label>
-        <TextInput
-          name="password"
-          type="password"
-          placeholder="Create a password"
-        />
+
+        <div className="relative">
+          <TextInput
+            name="password"
+            type={showPassword ? "text" : "password"}
+            placeholder="Create a password"
+          />
+
+          <button
+            type="button"
+            onClick={() => setShowPassword((v) => !v)}
+            className="absolute inset-y-0 right-3 my-auto h-8 rounded-lg px-2 text-xs font-medium text-green-700 transition hover:bg-green-100/60 hover:text-green-900 dark:text-green-200 dark:hover:bg-white/10 dark:hover:text-white"
+          >
+            {showPassword ? "Hide" : "Show"}
+          </button>
+        </div>
       </div>
 
       <div>
         <label className="mb-2 block text-sm font-medium text-foreground/80">
           Confirm password
         </label>
-        <TextInput
-          name="confirmPassword"
-          type="password"
-          placeholder="Re-enter your password"
-        />
+
+        <div className="relative">
+          <TextInput
+            name="confirmPassword"
+            type={showConfirmPassword ? "text" : "password"}
+            placeholder="Re-enter your password"
+          />
+
+          <button
+            type="button"
+            onClick={() => setShowConfirmPassword((v) => !v)}
+            className="absolute inset-y-0 right-3 my-auto h-8 rounded-lg px-2 text-xs font-medium text-green-700 transition hover:bg-green-100/60 hover:text-green-900 dark:text-green-200 dark:hover:bg-white/10 dark:hover:text-white"
+          >
+            {showConfirmPassword ? "Hide" : "Show"}
+          </button>
+        </div>
       </div>
 
       <PrimaryButton type="submit" disabled={isLoading} className="w-full">
         {isLoading ? "Creating account..." : "Create account"}
       </PrimaryButton>
 
-      <div className="text-sm">
-        <span className="text-foreground/65">Already have an account? </span>
+      <div className="flex flex-wrap items-center justify-end gap-3 text-sm">
+        <span className="text-foreground/65">Already have an account?</span>
         <Link
           href="/login"
           className="font-medium text-emerald-700 transition hover:text-emerald-800 dark:text-emerald-300 dark:hover:text-emerald-200"
@@ -116,11 +139,6 @@ export default function RegisterForm() {
           Login
         </Link>
       </div>
-
-      <DisclaimerBox>
-        <strong>Important:</strong> Waypoint is not a medical service. It does
-        not diagnose or prescribe.
-      </DisclaimerBox>
     </form>
   );
 }

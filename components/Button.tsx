@@ -2,22 +2,32 @@ import type { ReactNode } from "react";
 import * as React from "react";
 import Link from "next/link";
 
+type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
+  children: ReactNode;
+};
+
+function joinClasses(...classes: Array<string | false | null | undefined>) {
+  return classes.filter(Boolean).join(" ");
+}
+
 export function PrimaryButton({
   children,
   type = "button",
   className = "",
+  disabled,
   ...props
-}: React.ButtonHTMLAttributes<HTMLButtonElement> & { children: ReactNode }) {
+}: ButtonProps) {
   return (
     <button
       type={type}
-      className={[
-        "rounded-xl px-4 py-3 text-sm font-semibold transition",
-        "bg-green-600 text-white hover:bg-green-700",
-        "focus:outline-none focus:ring-2 focus:ring-green-200",
-        "disabled:opacity-60 disabled:cursor-not-allowed",
-        className,
-      ].join(" ")}
+      disabled={disabled}
+      className={joinClasses(
+        "inline-flex items-center justify-center rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition",
+        "hover:bg-emerald-700",
+        "focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:ring-offset-2 dark:focus:ring-offset-[#272c34]",
+        "disabled:cursor-not-allowed disabled:opacity-60",
+        className
+      )}
       {...props}
     >
       {children}
@@ -28,18 +38,21 @@ export function PrimaryButton({
 export function PrimaryLinkButton({
   href,
   children,
+  className = "",
 }: {
   href: string;
   children: ReactNode;
+  className?: string;
 }) {
   return (
     <Link
       href={href}
-      className={[
-        "inline-flex items-center justify-center rounded-xl px-4 py-3 text-sm font-semibold transition",
-        "bg-green-600 text-white hover:bg-green-700",
-        "focus:outline-none focus:ring-2 focus:ring-green-200",
-      ].join(" ")}
+      className={joinClasses(
+        "inline-flex items-center justify-center rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition",
+        "hover:bg-emerald-700",
+        "focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:ring-offset-2 dark:focus:ring-offset-[#272c34]",
+        className
+      )}
     >
       {children}
     </Link>
@@ -49,19 +62,21 @@ export function PrimaryLinkButton({
 export function SecondaryLinkButton({
   href,
   children,
+  className = "",
 }: {
   href: string;
   children: ReactNode;
+  className?: string;
 }) {
   return (
     <Link
       href={href}
-      className={[
-        "inline-flex items-center justify-center rounded-xl border px-4 py-3 text-sm font-semibold transition",
-        "border-green-300 bg-background text-green-700 hover:bg-green-100/60 hover:text-green-900",
-        "focus:outline-none focus:ring-2 focus:ring-green-200",
-        "dark:border-green-700 dark:text-green-200 dark:hover:bg-white/10 dark:hover:text-white",
-      ].join(" ")}
+      className={joinClasses(
+        "inline-flex items-center justify-center rounded-2xl border border-foreground/10 bg-white/80 px-5 py-3 text-sm font-semibold text-foreground shadow-sm transition",
+        "hover:bg-white dark:border-white/10 dark:bg-white/6 dark:hover:bg-white/10",
+        "focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:ring-offset-2 dark:focus:ring-offset-[#272c34]",
+        className
+      )}
     >
       {children}
     </Link>

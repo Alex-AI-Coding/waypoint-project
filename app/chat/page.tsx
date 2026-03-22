@@ -9,6 +9,7 @@ import Footer from "@/components/Footer";
 import ConfirmModal from "@/components/ConfirmModal";
 import { createClient } from "@/lib/supabase/browser";
 import { DEFAULT_UI_PREFS, loadUiPrefs, type UiPrefs } from "../settings/uiPrefs";
+import PageEnter from "@/components/PageEnter";
 
 type Msg = {
   id: string;
@@ -28,8 +29,7 @@ type Thread = {
 const STORAGE_THREADS_KEY = "waypoint_threads_v1";
 const STORAGE_ACTIVE_THREAD_KEY = "waypoint_active_thread_v1";
 
-const WAYPOINT_GREETING =
-  "Hi! I'm Waypoint, how may I help you today?";
+const WAYPOINT_GREETING = "Hi! I'm Waypoint, how may I help you today?";
 
 function uid() {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
@@ -65,7 +65,6 @@ function sortThreads(list: Thread[]) {
 export default function ChatPage() {
   const router = useRouter();
   const endRef = useRef<HTMLDivElement | null>(null);
-  const hasLoadedRef = useRef(false);
 
   const [uiPrefs, setUiPrefs] = useState<UiPrefs>(DEFAULT_UI_PREFS);
   const [threads, setThreads] = useState<Thread[]>([]);
@@ -142,8 +141,6 @@ export default function ChatPage() {
       if (initialActive) {
         await loadMessagesForThread(initialActive);
       }
-
-      hasLoadedRef.current = true;
     }
 
     boot();
@@ -362,10 +359,15 @@ export default function ChatPage() {
 
   async function send() {
     const text = input.trim();
-    if (!text || isTyping || !activeThreadId) return;
+    const currentThreadId = activeThreadId;
+    const currentThreadTitle = activeThread?.title ?? "New chat";
+
+    if (!text || isTyping || !currentThreadId) return;
 
     const supabase = createClient();
-    const nowIso = new Date().toISOString();
+    const { data: userData } = await supabase.auth.getUser();
+    const currentUserId = userData.user?.id ?? null;
+    const userCreatedAtIso = new Date().toISOString();
 
     const userMsg: Msg = {
       id: uid(),
@@ -390,25 +392,41 @@ export default function ChatPage() {
     setIsTyping(true);
     setInput("");
 
-    if (activeThread?.title === "New chat") {
+    if (currentThreadTitle === "New chat") {
       const nextTitle = makeTitleFromMessage(text);
-      await updateThread(activeThreadId, { title: nextTitle });
+      await updateThread(currentThreadId, { title: nextTitle });
     } else {
-      await updateThread(activeThreadId, {});
+      await updateThread(currentThreadId, {});
     }
 
-    try {
-      const { data: userData } = await supabase.auth.getUser();
-      if (userData.user) {
-        await supabase.from("messages").insert({
-          user_id: userData.user.id,
-          thread_id: activeThreadId,
-          role: "user",
-          content: text,
-          created_at: nowIso,
+    async function saveMessage(
+      role: "assistant" | "user",
+      content: string,
+      createdAt: string
+    ) {
+      if (!currentUserId) return false;
+
+      try {
+        const { error } = await supabase.from("messages").insert({
+          user_id: currentUserId,
+          thread_id: currentThreadId,
+          role,
+          content,
+          created_at: createdAt,
         });
+
+        return !error;
+      } catch {
+        return false;
       }
-    } catch {}
+    }
+
+    let didSaveUserMessage = false;
+
+    async function saveUserMessageIfNeeded() {
+      if (didSaveUserMessage) return;
+      didSaveUserMessage = await saveMessage("user", text, userCreatedAtIso);
+    }
 
     let fullText = "";
 
@@ -420,12 +438,14 @@ export default function ChatPage() {
         },
         body: JSON.stringify({
           message: text,
-          threadId: activeThreadId,
+          threadId: currentThreadId,
         }),
       });
 
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       if (!res.body) throw new Error("No stream");
+
+      await saveUserMessageIfNeeded();
 
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
@@ -479,21 +499,9 @@ export default function ChatPage() {
         }
       }
 
-      try {
-        const { data: userData } = await supabase.auth.getUser();
-        if (userData.user) {
-          await supabase.from("messages").insert({
-            user_id: userData.user.id,
-            thread_id: activeThreadId,
-            role: "assistant",
-            content: fullText || "…",
-            created_at: new Date().toISOString(),
-          });
-        }
-      } catch {}
+      await saveMessage("assistant", fullText || "…", new Date().toISOString());
     } catch {
-      const fallback =
-        "Something went wrong.\nWant to try sending that again?";
+      const fallback = "Something went wrong.\nWant to try sending that again?";
 
       setMessages((prev) =>
         prev.map((m) =>
@@ -501,18 +509,8 @@ export default function ChatPage() {
         )
       );
 
-      try {
-        const { data: userData } = await supabase.auth.getUser();
-        if (userData.user) {
-          await supabase.from("messages").insert({
-            user_id: userData.user.id,
-            thread_id: activeThreadId,
-            role: "assistant",
-            content: fallback,
-            created_at: new Date().toISOString(),
-          });
-        }
-      } catch {}
+      await saveUserMessageIfNeeded();
+      await saveMessage("assistant", fallback, new Date().toISOString());
     } finally {
       setIsTyping(false);
     }
@@ -521,10 +519,16 @@ export default function ChatPage() {
   const threadListClass = uiPrefs.compactThreads ? "space-y-2" : "space-y-3";
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(16,185,129,0.08),transparent_28%),var(--background)] px-4 pb-10">
-      <Nav current="chat" />
+    <main className="relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top,rgba(16,185,129,0.14),transparent_26%),radial-gradient(circle_at_bottom_right,rgba(56,189,248,0.12),transparent_24%),var(--background)] px-4 pb-10">
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute left-[-5rem] top-24 h-56 w-56 rounded-full bg-emerald-400/12 blur-3xl dark:bg-emerald-400/8" />
+        <div className="absolute right-[-4rem] top-32 h-72 w-72 rounded-full bg-sky-300/16 blur-3xl dark:bg-sky-400/8" />
+        <div className="absolute bottom-0 left-1/3 h-64 w-64 rounded-full bg-teal-300/10 blur-3xl dark:bg-teal-400/6" />
+      </div>
 
-      <div className="mx-auto mt-6 max-w-6xl">
+      <Nav current="chat" />
+      <PageEnter>
+      <div className="relative mx-auto mt-6 max-w-6xl">
         <Header
           title="Waypoint"
           subtitle="A calmer space to talk things through"
@@ -534,7 +538,7 @@ export default function ChatPage() {
           <button
             type="button"
             onClick={() => setMobileThreadsOpen((v) => !v)}
-            className="rounded-full border border-foreground/10 bg-white/80 px-4 py-2 text-sm font-medium shadow-sm backdrop-blur dark:border-white/8 dark:bg-[#272c34]/90"
+            className="rounded-full border border-foreground/10 bg-white/80 px-4 py-2 text-sm font-medium shadow-sm backdrop-blur transition hover:bg-white dark:border-white/8 dark:bg-[#272c34]/90 dark:hover:bg-[#2f3540]"
           >
             {mobileThreadsOpen ? "Hide chats" : "Show chats"}
           </button>
@@ -542,21 +546,25 @@ export default function ChatPage() {
           <button
             type="button"
             onClick={createNewThread}
-            className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700"
+            className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700"
           >
             New chat
           </button>
         </div>
 
-        <div className="mt-6 grid gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
+        <div className="mt-6 grid gap-6 lg:grid-cols-[310px_minmax(0,1fr)]">
           <aside className={`${mobileThreadsOpen ? "block" : "hidden"} lg:block`}>
-            <Card>
-              <div className="rounded-3xl border border-black/6 bg-white/82 p-4 shadow-[0_14px_40px_rgba(15,23,42,0.06)] backdrop-blur dark:border-white/8 dark:bg-[#272c34]/92 dark:shadow-[0_16px_44px_rgba(0,0,0,0.22)]">
+            <Card className="relative overflow-hidden border-emerald-100/80 bg-white/82 p-0 shadow-[0_18px_50px_rgba(15,23,42,0.06)] backdrop-blur dark:border-white/10 dark:bg-[#272c34]/90 dark:shadow-[0_18px_52px_rgba(0,0,0,0.22)]">
+              <div className="h-1.5 bg-gradient-to-r from-emerald-400 via-teal-400 to-sky-400" />
+
+              <div className="p-4">
                 <div className="mb-4 flex items-center justify-between gap-3">
                   <div>
-                    <h2 className="text-base font-semibold">Your chats</h2>
-                    <p className="text-sm text-foreground/65">
-                      Pin the important ones.
+                    <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">
+                      Your chats
+                    </h2>
+                    <p className="text-sm text-foreground/62">
+                      Keep conversations organized.
                     </p>
                   </div>
 
@@ -580,7 +588,7 @@ export default function ChatPage() {
                         className={[
                           "rounded-2xl border p-3 transition",
                           isActive
-                            ? "border-emerald-300 bg-emerald-100/75 shadow-sm dark:border-emerald-400/18 dark:bg-emerald-500/12"
+                            ? "border-emerald-300 bg-emerald-50 shadow-sm dark:border-emerald-400/22 dark:bg-emerald-500/12"
                             : "border-black/6 bg-foreground/[0.03] hover:bg-foreground/[0.05] dark:border-white/8 dark:bg-white/[0.03] dark:hover:bg-white/[0.05]",
                         ].join(" ")}
                       >
@@ -614,7 +622,7 @@ export default function ChatPage() {
                                 className="mt-2 w-full rounded-xl border border-foreground/10 bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-emerald-300 dark:border-white/10 dark:bg-[#21262d]"
                               />
                             ) : (
-                              <div className="mt-2 truncate text-sm font-semibold">
+                              <div className="mt-2 truncate text-sm font-semibold text-slate-900 dark:text-slate-100">
                                 {thread.title}
                               </div>
                             )}
@@ -676,108 +684,112 @@ export default function ChatPage() {
           </aside>
 
           <section>
-            <Card>
-              <div className="rounded-3xl border border-black/6 bg-white/82 p-4 shadow-[0_14px_40px_rgba(15,23,42,0.06)] backdrop-blur dark:border-white/8 dark:bg-[#272c34]/92 dark:shadow-[0_16px_44px_rgba(0,0,0,0.22)]">
+            <Card className="relative overflow-hidden border-emerald-100/80 bg-white/82 p-0 shadow-[0_18px_50px_rgba(15,23,42,0.06)] backdrop-blur dark:border-white/10 dark:bg-[#272c34]/90 dark:shadow-[0_18px_52px_rgba(0,0,0,0.22)]">
+              <div className="h-1.5 bg-gradient-to-r from-emerald-400 via-teal-400 to-sky-400" />
+
+              <div className="p-4 sm:p-5">
                 <div className="mb-4 flex items-center justify-between gap-3 border-b border-black/6 pb-4 dark:border-white/8">
                   <div className="min-w-0">
-                    <h2 className="truncate text-lg font-semibold">
+                    <div className="mb-2 flex flex-wrap items-center gap-2">
+                      <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-500/10 dark:text-emerald-200">
+                        Active conversation
+                      </span>
+                    </div>
+
+                    <h2 className="truncate text-lg font-semibold text-slate-900 dark:text-slate-100">
                       {activeThread?.title ?? "New chat"}
                     </h2>
-                    <p className="text-sm text-foreground/65">
+                    <p className="text-sm text-foreground/62">
                       A private place to talk things through
                     </p>
                   </div>
-
-                  <button
-                    type="button"
-                    onClick={createNewThread}
-                    className="hidden rounded-full border border-foreground/10 px-4 py-2 text-sm font-medium transition hover:bg-foreground/5 lg:inline-flex dark:border-white/10 dark:hover:bg-white/6"
-                  >
-                    New thread
-                  </button>
                 </div>
 
-                <div className="space-y-4">
-                  {messages.map((m) => (
-                    <div
-                      key={m.id}
-                      className={`flex ${
-                        m.role === "assistant" ? "justify-start" : "justify-end"
-                      }`}
-                    >
+                <div className="rounded-[1.75rem] border border-black/6 bg-white/70 p-3 shadow-sm dark:border-white/8 dark:bg-[#222831]/60 sm:p-4">
+                  <div className="space-y-4">
+                    {messages.map((m) => (
                       <div
-                        className={[
-                          "max-w-[88%] rounded-3xl px-4 py-3 shadow-sm",
-                          m.role === "assistant"
-                            ? "bg-white text-slate-900 dark:bg-[#313743] dark:text-slate-100"
-                            : "bg-emerald-100 text-emerald-950 dark:bg-emerald-500/16 dark:text-emerald-100",
-                        ].join(" ")}
+                        key={m.id}
+                        className={`flex ${
+                          m.role === "assistant" ? "justify-start" : "justify-end"
+                        }`}
                       >
-                        <div className="mb-1 flex items-center gap-2">
-                          <span className="text-xs font-semibold uppercase tracking-[0.16em] text-foreground/50">
-                            {m.role === "assistant" ? "Waypoint" : "You"}
-                          </span>
-
-                          {uiPrefs.showTimestamps && m.createdAt && (
-                            <span className="text-xs text-foreground/45">
-                              {new Date(m.createdAt).toLocaleTimeString([], {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })}
+                        <div
+                          className={[
+                            "max-w-[88%] rounded-3xl px-4 py-3 shadow-sm",
+                            m.role === "assistant"
+                              ? "border border-black/6 bg-white text-slate-900 dark:border-white/8 dark:bg-[#313743] dark:text-slate-100"
+                              : "bg-emerald-100 text-emerald-950 dark:bg-emerald-500/16 dark:text-emerald-100",
+                          ].join(" ")}
+                        >
+                          <div className="mb-1 flex items-center gap-2">
+                            <span className="text-xs font-semibold uppercase tracking-[0.16em] text-foreground/50">
+                              {m.role === "assistant" ? "Waypoint" : "You"}
                             </span>
-                          )}
 
-                          {isTyping && m.id === assistantId && (
-                            <span className="text-xs text-foreground/45">
-                              • • •
-                            </span>
-                          )}
-                        </div>
+                            {uiPrefs.showTimestamps && m.createdAt && (
+                              <span className="text-xs text-foreground/45">
+                                {new Date(m.createdAt).toLocaleTimeString([], {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })}
+                              </span>
+                            )}
 
-                        <div className="whitespace-pre-wrap text-sm leading-6">
-                          {m.text}
+                            {isTyping && m.id === assistantId && (
+                              <span className="text-xs text-foreground/45">
+                                • • •
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="whitespace-pre-wrap text-sm leading-6">
+                            {m.text}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
 
-                  <div ref={endRef} />
+                    <div ref={endRef} />
+                  </div>
                 </div>
 
                 <div className="mt-5 border-t border-black/6 pt-4 dark:border-white/8">
-                  <div className="flex gap-3">
-                    <textarea
-                      value={input}
-                      onChange={(e) => setInput(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (
-                          uiPrefs.enterToSend &&
-                          e.key === "Enter" &&
-                          !e.shiftKey &&
-                          !isTyping
-                        ) {
-                          e.preventDefault();
-                          void send();
+                  <div className="rounded-[1.5rem] border border-black/6 bg-white/72 p-3 shadow-sm dark:border-white/8 dark:bg-[#222831]/60">
+                    <div className="flex gap-3">
+                      <textarea
+                        value={input}
+                        onChange={(e) => setInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (
+                            uiPrefs.enterToSend &&
+                            e.key === "Enter" &&
+                            !e.shiftKey &&
+                            !isTyping
+                          ) {
+                            e.preventDefault();
+                            void send();
+                          }
+                        }}
+                        rows={3}
+                        placeholder={
+                          isTyping
+                            ? "Waypoint is typing…"
+                            : "Type what’s on your mind…"
                         }
-                      }}
-                      rows={3}
-                      placeholder={
-                        isTyping
-                          ? "Waypoint is typing…"
-                          : "Type what’s on your mind…"
-                      }
-                      disabled={isTyping}
-                      className="min-h-[88px] flex-1 resize-none rounded-2xl border border-foreground/10 bg-background px-4 py-3 text-sm outline-none transition focus:ring-2 focus:ring-emerald-300 disabled:opacity-60 dark:border-white/10 dark:bg-[#21262d]"
-                    />
+                        disabled={isTyping}
+                        className="min-h-[88px] flex-1 resize-none rounded-2xl border border-foreground/10 bg-background px-4 py-3 text-sm outline-none transition focus:ring-2 focus:ring-emerald-300 disabled:opacity-60 dark:border-white/10 dark:bg-[#21262d]"
+                      />
 
-                    <button
-                      type="button"
-                      onClick={send}
-                      disabled={isTyping || !input.trim()}
-                      className="self-end rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      Send
-                    </button>
+                      <button
+                        type="button"
+                        onClick={send}
+                        disabled={isTyping || !input.trim()}
+                        className="self-end rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        Send
+                      </button>
+                    </div>
                   </div>
 
                   <p className="mt-2 text-xs text-foreground/50">
@@ -791,6 +803,7 @@ export default function ChatPage() {
 
         <Footer />
       </div>
+      </PageEnter>
 
       <ConfirmModal
         open={showDeleteConfirm}

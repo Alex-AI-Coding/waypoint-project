@@ -50,9 +50,12 @@ function isSoftDistress(message: string): boolean {
 }
 
 function getCrisisResponse(): string {
-  return `I'm really sorry that you're feeling this much pain right now. You don't have to handle this alone. If you're in immediate danger or feel like you might act on these thoughts, please contact your local emergency services right now. If you can, consider reaching out to someone you trust — a friend, family member, or someone close to you.
+  return `I'm really sorry that you're feeling this much pain right now.
+You don't have to handle this alone. If you're in immediate danger or feel like you might act on these thoughts, please contact your local emergency services right now. If you can, consider reaching out to someone you trust — a friend, family member, or someone close to you.
 
-If you're in the Philippines, you can call or text 0966-351-4518 (Globe) or 0908-639-2672 (Smart) to reach the Suicide & Crisis Lifeline. It's free and available 24/7. If you're outside the Philippines, I can help you look for a crisis support number in your country.
+If you're in the Philippines, you can call or text 0966-351-4518 (Globe) or 0908-639-2672 (Smart) to reach the Suicide & Crisis Lifeline. It's free and available 24/7.
+
+If you're outside the Philippines, I can help you look for a crisis support number in your country.
 
 I'm here to listen, but you deserve real-time human support too.`;
 }
@@ -66,6 +69,8 @@ type TonePref = "calm" | "gentle" | "direct";
 function buildSystemPrompt(options?: {
   softDistress?: boolean;
   tone?: TonePref;
+  supportiveReminders?: boolean;
+  alwaysShowCrisisLink?: boolean;
 }) {
   const base = [
     "You are Waypoint, a supportive mental health companion chatbot.",
@@ -87,6 +92,22 @@ function buildSystemPrompt(options?: {
     base.push(
       "The user appears emotionally distressed. Slow down your tone. Validate their feelings gently. Avoid being overly upbeat. Focus on empathy before offering suggestions."
     );
+
+    if (options?.supportiveReminders === false) {
+      base.push(
+        "Do not proactively add breathing exercises, grounding tips, coping reminders, or 'one small next step' suggestions unless the user asks for them or they are clearly necessary."
+      );
+    } else {
+      base.push(
+        "You may include at most one brief grounding or coping reminder if it naturally fits the response."
+      );
+    }
+
+    if (options?.alwaysShowCrisisLink) {
+      base.push(
+        "Include one brief sentence that reminds the user to reach out to local emergency or crisis support if they feel unsafe or think they might act on harmful urges."
+      );
+    }
   }
 
   return base.join(" ");
@@ -159,13 +180,13 @@ export async function POST(req: Request) {
     const body = (await req.json()) as Body;
     const message = (body.message ?? "").trim();
     const threadId = (body.threadId ?? "").trim();
-
     const cookieResponse = new Response();
 
     if (!message) {
       const stream = sseStreamFromSingleReply(
         "Tell me a bit more—what’s been going on?"
       );
+
       return new Response(stream, {
         headers: sseHeaders(cookieResponse.headers),
       });
@@ -173,6 +194,7 @@ export async function POST(req: Request) {
 
     if (isCrisisMessage(message)) {
       const stream = sseStreamFromSingleReply(getCrisisResponse());
+
       return new Response(stream, {
         headers: sseHeaders(cookieResponse.headers),
       });
@@ -187,12 +209,14 @@ export async function POST(req: Request) {
         cookies: {
           getAll() {
             const cookieHeader = req.headers.get("cookie") ?? "";
+
             return cookieHeader
               .split(";")
               .map((c) => c.trim())
               .filter(Boolean)
               .map((c) => {
                 const idx = c.indexOf("=");
+
                 return {
                   name: idx === -1 ? c : c.slice(0, idx),
                   value: idx === -1 ? "" : c.slice(idx + 1),
@@ -215,17 +239,27 @@ export async function POST(req: Request) {
     const user = userData.user ?? null;
 
     let tonePref: TonePref = "calm";
+    let supportiveReminders = true;
+    let alwaysShowCrisisLink = true;
 
     if (user) {
       const { data: settingsRow } = await supabase
         .from("user_settings")
-        .select("tone")
+        .select("tone, supportive_reminders, always_show_crisis_link")
         .eq("user_id", user.id)
         .single();
 
       const t = settingsRow?.tone;
       if (t === "calm" || t === "gentle" || t === "direct") {
         tonePref = t;
+      }
+
+      if (typeof settingsRow?.supportive_reminders === "boolean") {
+        supportiveReminders = settingsRow.supportive_reminders;
+      }
+
+      if (typeof settingsRow?.always_show_crisis_link === "boolean") {
+        alwaysShowCrisisLink = settingsRow.always_show_crisis_link;
       }
     }
 
@@ -259,6 +293,8 @@ export async function POST(req: Request) {
     const system = buildSystemPrompt({
       softDistress,
       tone: tonePref,
+      supportiveReminders,
+      alwaysShowCrisisLink,
     });
 
     const ollamaMessages = [

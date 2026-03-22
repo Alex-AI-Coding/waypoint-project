@@ -29,76 +29,85 @@ export default function Nav({
       : "home");
 
   const tabBase =
-    "inline-flex items-center rounded-full px-3.5 py-2 text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-emerald-300/70";
+    "inline-flex items-center justify-center rounded-full px-4 py-2.5 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-emerald-300/70";
+
   const active =
-    "bg-emerald-100 text-emerald-950 shadow-sm dark:bg-emerald-500/14 dark:text-emerald-100 dark:ring-1 dark:ring-emerald-400/18";
+    "border border-emerald-300 bg-emerald-100 text-emerald-950 shadow-sm dark:border-emerald-400/20 dark:bg-emerald-500/14 dark:text-emerald-100";
+
   const inactive =
-    "text-emerald-800 hover:bg-emerald-100/80 hover:text-emerald-950 dark:text-emerald-100/80 dark:hover:bg-white/6 dark:hover:text-white";
+    "border border-transparent text-foreground/75 hover:border-foreground/10 hover:bg-white/70 hover:text-foreground dark:text-slate-200/80 dark:hover:border-white/10 dark:hover:bg-white/8 dark:hover:text-white";
 
   return (
     <>
-      <div className="mx-auto mt-4 flex w-full max-w-6xl items-center justify-between gap-3 rounded-2xl border border-black/6 bg-white/80 px-3 py-3 shadow-[0_8px_30px_rgba(15,23,42,0.05)] backdrop-blur dark:border-white/8 dark:bg-[#272c34]/90 dark:shadow-[0_10px_35px_rgba(0,0,0,0.22)]">
-        <div className="flex items-center gap-2">
-          {onChatClick ? (
-            <button
-              type="button"
-              onClick={onChatClick}
-              className={`${tabBase} ${
-                resolvedCurrent === "chat" ? active : inactive
-              }`}
-            >
-              Chat
-            </button>
-          ) : (
-            <Link
-              href="/chat"
-              className={`${tabBase} ${
-                resolvedCurrent === "chat" ? active : inactive
-              }`}
-            >
-              Chat
-            </Link>
-          )}
-
-          {onSettingsClick ? (
-            <button
-              type="button"
-              onClick={onSettingsClick}
-              className={`${tabBase} ${
-                resolvedCurrent === "settings" ? active : inactive
-              }`}
-            >
-              Settings
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setShowSettingsConfirm(true)}
-              className={`${tabBase} ${
-                resolvedCurrent === "settings" ? active : inactive
-              }`}
-            >
-              Settings
-            </button>
-          )}
+      <nav className="relative overflow-hidden rounded-[1.5rem] border border-black/6 bg-white/74 px-4 py-3 shadow-[0_14px_40px_rgba(15,23,42,0.05)] backdrop-blur dark:border-white/8 dark:bg-[#272c34]/82 dark:shadow-[0_16px_44px_rgba(0,0,0,0.22)]">
+        <div className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div className="absolute -left-8 top-0 h-20 w-20 rounded-full bg-emerald-300/16 blur-2xl dark:bg-emerald-400/10" />
+          <div className="absolute right-0 top-0 h-20 w-20 rounded-full bg-sky-300/16 blur-2xl dark:bg-sky-400/10" />
         </div>
 
-        <form ref={logoutFormRef} action={logoutAction}>
-          <button
-            type="button"
-            onClick={() => setShowLogoutConfirm(true)}
-            className="rounded-full border border-foreground/10 px-3.5 py-2 text-sm font-medium text-foreground/80 transition hover:bg-foreground/5 dark:border-white/10 dark:hover:bg-white/6"
-          >
-            Logout
-          </button>
-        </form>
-      </div>
+        <div className="relative flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2">
+            {onChatClick ? (
+              <button
+                type="button"
+                onClick={onChatClick}
+                className={`${tabBase} ${
+                  resolvedCurrent === "chat" ? active : inactive
+                }`}
+              >
+                Chat
+              </button>
+            ) : (
+              <Link
+                href="/chat"
+                className={`${tabBase} ${
+                  resolvedCurrent === "chat" ? active : inactive
+                }`}
+              >
+                Chat
+              </Link>
+            )}
+
+            {onSettingsClick ? (
+              <button
+                type="button"
+                onClick={onSettingsClick}
+                className={`${tabBase} ${
+                  resolvedCurrent === "settings" ? active : inactive
+                }`}
+              >
+                Settings
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setShowSettingsConfirm(true)}
+                className={`${tabBase} ${
+                  resolvedCurrent === "settings" ? active : inactive
+                }`}
+              >
+                Settings
+              </button>
+            )}
+          </div>
+
+          <form ref={logoutFormRef} action={logoutAction}>
+            <button
+              type="button"
+              onClick={() => setShowLogoutConfirm(true)}
+              className="inline-flex items-center justify-center rounded-full border border-foreground/10 bg-white/80 px-4 py-2.5 text-sm font-semibold text-foreground/80 shadow-sm transition hover:bg-white hover:text-foreground dark:border-white/10 dark:bg-white/6 dark:text-slate-200/85 dark:hover:bg-white/10 dark:hover:text-white"
+            >
+              Logout
+            </button>
+          </form>
+        </div>
+      </nav>
 
       <ConfirmModal
         open={showSettingsConfirm}
-        title="Open settings?"
-        description="Your current chat will stay right where it is."
-        confirmLabel="Open settings"
+        title="Go to settings?"
+        description="You may have unsaved changes in your current screen."
+        confirmLabel="Continue"
         cancelLabel="Stay here"
         onCancel={() => setShowSettingsConfirm(false)}
         onConfirm={() => {
@@ -109,8 +118,8 @@ export default function Nav({
 
       <ConfirmModal
         open={showLogoutConfirm}
-        title="Log out of Waypoint?"
-        description="You can always log back in later."
+        title="Log out?"
+        description="You’ll need to sign in again to continue your conversations."
         confirmLabel="Log out"
         cancelLabel="Cancel"
         onCancel={() => setShowLogoutConfirm(false)}

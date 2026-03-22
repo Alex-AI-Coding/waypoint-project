@@ -1,25 +1,28 @@
 import * as React from "react";
 
-export type TextInputProps = React.InputHTMLAttributes<HTMLInputElement>;
+function joinClasses(...classes: Array<string | false | null | undefined>) {
+  return classes.filter(Boolean).join(" ");
+}
 
-export default function TextInput({
-  className = "",
-  type = "text",
-  ...props
-}: TextInputProps) {
+const TextInput = React.forwardRef<
+  HTMLInputElement,
+  React.InputHTMLAttributes<HTMLInputElement>
+>(function TextInput({ className = "", type = "text", ...props }, ref) {
   return (
     <input
+      ref={ref}
       type={type}
-      className={[
-        "w-full rounded-xl border px-4 py-3 text-sm transition",
-        "bg-background text-foreground placeholder:text-foreground/50",
-        "border-foreground/15",
-        "focus:outline-none focus:ring-2 focus:ring-green-200 focus:border-green-300",
-        "disabled:opacity-60 disabled:cursor-not-allowed",
-        "dark:focus:ring-green-300/30 dark:focus:border-green-700",
-        className,
-      ].join(" ")}
+      className={joinClasses(
+        "w-full rounded-2xl border border-foreground/10 bg-white/88 px-4 py-3 text-sm text-foreground shadow-sm transition",
+        "placeholder:text-foreground/45",
+        "focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:border-emerald-300",
+        "disabled:cursor-not-allowed disabled:opacity-60",
+        "dark:border-white/10 dark:bg-[#21262d] dark:text-slate-100 dark:placeholder:text-slate-400",
+        className
+      )}
       {...props}
     />
   );
-}
+});
+
+export default TextInput;
