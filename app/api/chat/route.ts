@@ -1,16 +1,20 @@
 import { createServerClient } from "@supabase/ssr";
+import { GoogleGenAI } from "@google/genai";
 
 export const runtime = "nodejs";
+
+const ai = new GoogleGenAI({
+  apiKey: process.env.GEMINI_API_KEY,
+});
+
+const GEMINI_MODEL = process.env.GEMINI_MODEL ?? "gemini-2.5-flash";
 
 type Body = {
   message?: string;
   threadId?: string;
 };
 
-/* ===============================
-   SAFETY LAYER
-================================ */
-
+/* =============================== SAFETY LAYER ================================ */
 const CRISIS_PATTERNS: RegExp[] = [
   /suicide/i,
   /kill myself/i,
@@ -51,19 +55,15 @@ function isSoftDistress(message: string): boolean {
 
 function getCrisisResponse(): string {
   return `I'm really sorry that you're feeling this much pain right now.
-You don't have to handle this alone. If you're in immediate danger or feel like you might act on these thoughts, please contact your local emergency services right now. If you can, consider reaching out to someone you trust — a friend, family member, or someone close to you.
 
-If you're in the Philippines, you can call or text 0966-351-4518 (Globe) or 0908-639-2672 (Smart) to reach the Suicide & Crisis Lifeline. It's free and available 24/7.
+You don't have to handle this alone. If you're in immediate danger or feel like you might act on these thoughts, please contact your local emergency services right now. If you can, consider reaching out to someone you trust — a friend, family member, or someone close to you. If you're in the Philippines, you can call or text 0966-351-4518 (Globe) or 0908-639-2672 (Smart) to reach the Suicide & Crisis Lifeline. It's free and available 24/7.
 
 If you're outside the Philippines, I can help you look for a crisis support number in your country.
 
 I'm here to listen, but you deserve real-time human support too.`;
 }
 
-/* ===============================
-   SYSTEM PROMPT
-================================ */
-
+/* =============================== SYSTEM PROMPT ================================ */
 type TonePref = "calm" | "gentle" | "direct";
 
 function buildSystemPrompt(options?: {
@@ -74,7 +74,8 @@ function buildSystemPrompt(options?: {
 }) {
   const base = [
     "You are Waypoint, a supportive mental health companion chatbot.",
-    "You are NOT a medical service. Do not diagnose.",
+    "You are NOT a medical service.",
+    "Do not diagnose.",
     "Do not prescribe.",
     "Ask one gentle follow-up question.",
     "If the user mentions self-harm or suicide, encourage contacting local emergency services and a trusted person immediately.",
@@ -113,40 +114,7 @@ function buildSystemPrompt(options?: {
   return base.join(" ");
 }
 
-/* ===============================
-   OLLAMA STREAM
-================================ */
-
-async function ollamaChatStream(
-  messages: Array<{ role: string; content: string }>
-) {
-  const baseUrl = process.env.OLLAMA_URL ?? "http://localhost:11434";
-  const model = process.env.OLLAMA_MODEL ?? "llama3.1:8b";
-
-  const res = await fetch(`${baseUrl}/api/chat`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model,
-      messages,
-      stream: true,
-    }),
-  });
-
-  if (!res.ok || !res.body) {
-    const text = await res.text().catch(() => "");
-    throw new Error(`Ollama error ${res.status}: ${text}`);
-  }
-
-  return res.body;
-}
-
-/* ===============================
-   SSE HELPERS
-================================ */
-
+/* =============================== SSE HELPERS ================================ */
 function sseHeaders(extra?: HeadersInit): Headers {
   const h = new Headers(extra);
   h.set("Content-Type", "text/event-stream; charset=utf-8");
@@ -171,10 +139,7 @@ function sseStreamFromSingleReply(reply: string): ReadableStream {
   });
 }
 
-/* ===============================
-   POST
-================================ */
-
+/* =============================== POST ================================ */
 export async function POST(req: Request) {
   try {
     const body = (await req.json()) as Body;
@@ -186,7 +151,6 @@ export async function POST(req: Request) {
       const stream = sseStreamFromSingleReply(
         "Tell me a bit more—what’s been going on?"
       );
-
       return new Response(stream, {
         headers: sseHeaders(cookieResponse.headers),
       });
@@ -194,7 +158,6 @@ export async function POST(req: Request) {
 
     if (isCrisisMessage(message)) {
       const stream = sseStreamFromSingleReply(getCrisisResponse());
-
       return new Response(stream, {
         headers: sseHeaders(cookieResponse.headers),
       });
@@ -209,14 +172,12 @@ export async function POST(req: Request) {
         cookies: {
           getAll() {
             const cookieHeader = req.headers.get("cookie") ?? "";
-
             return cookieHeader
               .split(";")
               .map((c) => c.trim())
               .filter(Boolean)
               .map((c) => {
                 const idx = c.indexOf("=");
-
                 return {
                   name: idx === -1 ? c : c.slice(0, idx),
                   value: idx === -1 ? "" : c.slice(idx + 1),
@@ -297,69 +258,65 @@ export async function POST(req: Request) {
       alwaysShowCrisisLink,
     });
 
-    const ollamaMessages = [
-      { role: "system", content: system },
+    const geminiContents = [
+      {
+        role: "user",
+        parts: [{ text: system }],
+      },
       ...history.map((m) => ({
-        role: m.role,
-        content: m.content,
+        role: m.role === "assistant" ? "model" : "user",
+        parts: [{ text: m.content }],
       })),
-      { role: "user", content: message },
+      {
+        role: "user",
+        parts: [{ text: message }],
+      },
     ];
 
-    const ollamaBody = await ollamaChatStream(ollamaMessages);
     const encoder = new TextEncoder();
-    const decoder = new TextDecoder();
 
-    const sseStream = new ReadableStream({
+    const stream = new ReadableStream({
       async start(controller) {
-        const reader = ollamaBody.getReader();
-        let buffer = "";
+        let sawAnyText = false;
 
         try {
-          while (true) {
-            const { value, done } = await reader.read();
-            if (done) break;
+          const response = await ai.models.generateContentStream({
+            model: GEMINI_MODEL,
+            contents: geminiContents,
+          });
 
-            buffer += decoder.decode(value, { stream: true });
-            const lines = buffer.split("\n");
-            buffer = lines.pop() ?? "";
+          for await (const chunk of response) {
+            const token = chunk.text ?? "";
+            if (!token) continue;
 
-            for (const line of lines) {
-              if (!line.trim()) continue;
-
-              try {
-                const json = JSON.parse(line);
-                const token = json?.message?.content ?? "";
-
-                if (token) {
-                  controller.enqueue(
-                    encoder.encode(`data: ${JSON.stringify({ token })}\n\n`)
-                  );
-                }
-
-                if (json?.done) {
-                  controller.enqueue(
-                    encoder.encode(`data: ${JSON.stringify({ done: true })}\n\n`)
-                  );
-                  controller.close();
-                  return;
-                }
-              } catch {
-                // ignore malformed / partial NDJSON
-              }
-            }
+            sawAnyText = true;
+            controller.enqueue(
+              encoder.encode(`data: ${JSON.stringify({ token })}\n\n`)
+            );
           }
 
+          if (!sawAnyText) {
+            controller.enqueue(
+              encoder.encode(
+                `data: ${JSON.stringify({
+                  token:
+                    "I’m here with you. Could you tell me a little more about what’s been weighing on you?",
+                })}\n\n`
+              )
+            );
+          }
+
+          controller.enqueue(
+            encoder.encode(`data: ${JSON.stringify({ done: true })}\n\n`)
+          );
           controller.close();
         } catch (err) {
           controller.error(err);
-        } finally {
-          reader.releaseLock();
         }
       },
     });
 
-    return new Response(sseStream, {
+    return new Response(stream, {
       headers: sseHeaders(cookieResponse.headers),
     });
   } catch {
