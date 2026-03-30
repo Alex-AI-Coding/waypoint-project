@@ -43,7 +43,7 @@ export default function HomePage() {
               <div className="relative px-4 py-8 sm:px-10 sm:py-14">
                 <div className="mx-auto flex items-center justify-center">
                   <Image
-                    src="/Waypointicon.png"
+                    src="/WaypointIcon.png"
                     alt="Waypoint icon"
                     width={62}
                     height={62}
