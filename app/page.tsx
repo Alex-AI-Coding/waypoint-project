@@ -45,8 +45,8 @@ export default function HomePage() {
                   <Image
                     src="/WaypointIcon.png"
                     alt="Waypoint icon"
-                    width={62}
-                    height={62}
+                    width={186}
+                    height={186}
                     priority
                   />
                 </div>
