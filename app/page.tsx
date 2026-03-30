@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
+
 import Card from "@/components/Card";
 import Footer from "@/components/Footer";
 import PageEnter from "@/components/PageEnter";
@@ -21,7 +22,7 @@ const infoCards = [
 
 export default function HomePage() {
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top,rgba(16,185,129,0.18),transparent_30%),radial-gradient(circle_at_bottom_right,rgba(56,189,248,0.14),transparent_24%),var(--background)] px-4 pb-10">
+    <main className="relative min-h-dvh overflow-hidden bg-[radial-gradient(circle_at_top,rgba(16,185,129,0.18),transparent_30%),radial-gradient(circle_at_bottom_right,rgba(56,189,248,0.14),transparent_24%),var(--background)] px-4 pb-10">
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute left-[-5rem] top-20 h-56 w-56 rounded-full bg-emerald-400/14 blur-3xl dark:bg-emerald-400/10" />
         <div className="absolute right-[-4rem] top-28 h-72 w-72 rounded-full bg-sky-300/20 blur-3xl dark:bg-sky-400/10" />
@@ -29,7 +30,7 @@ export default function HomePage() {
       </div>
 
       <PageEnter>
-        <div className="relative mx-auto flex min-h-screen max-w-5xl flex-col justify-center pt-8">
+        <div className="relative mx-auto flex min-h-dvh max-w-5xl flex-col justify-center py-6 sm:py-8">
           <div className="mx-auto w-full max-w-4xl">
             <Card className="relative overflow-hidden border-emerald-100/90 bg-white/84 p-0 text-center shadow-[0_24px_70px_rgba(15,23,42,0.08)] backdrop-blur dark:border-white/10 dark:bg-[#272c34]/92 dark:shadow-[0_24px_70px_rgba(0,0,0,0.28)]">
               <div className="pointer-events-none absolute inset-0">
@@ -39,7 +40,7 @@ export default function HomePage() {
 
               <div className="h-1.5 bg-gradient-to-r from-emerald-400 via-teal-400 to-sky-400" />
 
-              <div className="relative px-6 py-10 sm:px-10 sm:py-14">
+              <div className="relative px-4 py-8 sm:px-10 sm:py-14">
                 <div className="mx-auto flex items-center justify-center">
                   <Image
                     src="/Waypointicon.png"
@@ -58,7 +59,7 @@ export default function HomePage() {
                   </span>
                 </div>
 
-                <h1 className="mt-6 text-4xl font-semibold tracking-tight text-slate-900 dark:text-slate-50 sm:text-5xl">
+                <h1 className="mt-6 text-3xl font-semibold tracking-tight text-slate-900 dark:text-slate-50 sm:text-5xl">
                   Welcome to Waypoint
                 </h1>
 
@@ -72,16 +73,17 @@ export default function HomePage() {
                   and return to a space built with comfort and clarity in mind.
                 </p>
 
-                <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+                <div className="mt-8 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center">
                   <Link
                     href="/login"
-                    className="inline-flex items-center justify-center rounded-2xl bg-emerald-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700"
+                    className="inline-flex min-h-11 w-full items-center justify-center rounded-2xl bg-emerald-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 sm:w-auto"
                   >
                     Login
                   </Link>
+
                   <Link
                     href="/register"
-                    className="inline-flex items-center justify-center rounded-2xl border border-foreground/10 bg-white/75 px-6 py-3 text-sm font-semibold text-foreground shadow-sm transition hover:bg-white dark:border-white/10 dark:bg-white/6 dark:hover:bg-white/10"
+                    className="inline-flex min-h-11 w-full items-center justify-center rounded-2xl border border-foreground/10 bg-white/75 px-6 py-3 text-sm font-semibold text-foreground shadow-sm transition hover:bg-white dark:border-white/10 dark:bg-white/6 dark:hover:bg-white/10 sm:w-auto"
                   >
                     Register
                   </Link>

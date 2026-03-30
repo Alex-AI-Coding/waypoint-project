@@ -3,12 +3,14 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+
 import TextInput from "@/components/TextInput";
 import { PrimaryButton } from "@/components/Button";
 import { createClient } from "@/lib/supabase/browser";
 
 export default function LoginForm() {
   const router = useRouter();
+
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -30,6 +32,7 @@ export default function LoginForm() {
 
     try {
       const supabase = createClient();
+
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -61,7 +64,14 @@ export default function LoginForm() {
         <label className="mb-2 block text-sm font-medium text-foreground/80">
           Email
         </label>
-        <TextInput name="email" type="email" placeholder="you@example.com" />
+
+        <TextInput
+          name="email"
+          type="email"
+          autoComplete="email"
+          inputMode="email"
+          placeholder="you@example.com"
+        />
       </div>
 
       <div>
@@ -73,7 +83,9 @@ export default function LoginForm() {
           <TextInput
             name="password"
             type={showPassword ? "text" : "password"}
+            autoComplete="current-password"
             placeholder="Enter your password"
+            className="pr-16"
           />
 
           <button
@@ -86,11 +98,11 @@ export default function LoginForm() {
         </div>
       </div>
 
-      <PrimaryButton type="submit" disabled={isLoading} className="w-full">
+      <PrimaryButton type="submit" disabled={isLoading} className="min-h-11 w-full">
         {isLoading ? "Logging in..." : "Login"}
       </PrimaryButton>
 
-      <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
+      <div className="flex flex-col gap-3 text-sm sm:flex-row sm:items-center sm:justify-between">
         <Link
           href="/forgot-password"
           className="text-foreground/65 transition hover:text-foreground"

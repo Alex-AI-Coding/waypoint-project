@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useRef, useState } from "react";
 import { logoutAction } from "@/app/actions/logout";
+
 import ConfirmModal from "@/components/ConfirmModal";
 
 export default function Nav({
@@ -25,11 +26,11 @@ export default function Nav({
     (pathname?.startsWith("/settings")
       ? "settings"
       : pathname?.startsWith("/chat")
-      ? "chat"
-      : "home");
+        ? "chat"
+        : "home");
 
   const tabBase =
-    "inline-flex items-center justify-center rounded-full px-4 py-2.5 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-emerald-300/70";
+    "inline-flex min-h-11 w-full items-center justify-center rounded-full px-4 py-2.5 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-emerald-300/70 sm:w-auto";
 
   const active =
     "border border-emerald-300 bg-emerald-100 text-emerald-950 shadow-sm dark:border-emerald-400/20 dark:bg-emerald-500/14 dark:text-emerald-100";
@@ -45,8 +46,8 @@ export default function Nav({
           <div className="absolute right-0 top-0 h-20 w-20 rounded-full bg-sky-300/16 blur-2xl dark:bg-sky-400/10" />
         </div>
 
-        <div className="relative flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-wrap items-center gap-2">
+        <div className="relative flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
             {onChatClick ? (
               <button
                 type="button"
@@ -91,11 +92,11 @@ export default function Nav({
             )}
           </div>
 
-          <form ref={logoutFormRef} action={logoutAction}>
+          <form ref={logoutFormRef} action={logoutAction} className="w-full sm:w-auto">
             <button
               type="button"
               onClick={() => setShowLogoutConfirm(true)}
-              className="inline-flex items-center justify-center rounded-full border border-foreground/10 bg-white/80 px-4 py-2.5 text-sm font-semibold text-foreground/80 shadow-sm transition hover:bg-white hover:text-foreground dark:border-white/10 dark:bg-white/6 dark:text-slate-200/85 dark:hover:bg-white/10 dark:hover:text-white"
+              className="inline-flex min-h-11 w-full items-center justify-center rounded-full border border-foreground/10 bg-white/80 px-4 py-2.5 text-sm font-semibold text-foreground/80 shadow-sm transition hover:bg-white hover:text-foreground dark:border-white/10 dark:bg-white/6 dark:text-slate-200/85 dark:hover:bg-white/10 dark:hover:text-white sm:w-auto"
             >
               Logout
             </button>

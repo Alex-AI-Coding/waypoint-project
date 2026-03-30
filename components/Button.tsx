@@ -22,7 +22,7 @@ export function PrimaryButton({
       type={type}
       disabled={disabled}
       className={joinClasses(
-        "inline-flex items-center justify-center rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition",
+        "inline-flex min-h-11 items-center justify-center rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition",
         "hover:bg-emerald-700",
         "focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:ring-offset-2 dark:focus:ring-offset-[#272c34]",
         "disabled:cursor-not-allowed disabled:opacity-60",
@@ -48,7 +48,7 @@ export function PrimaryLinkButton({
     <Link
       href={href}
       className={joinClasses(
-        "inline-flex items-center justify-center rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition",
+        "inline-flex min-h-11 items-center justify-center rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition",
         "hover:bg-emerald-700",
         "focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:ring-offset-2 dark:focus:ring-offset-[#272c34]",
         className
@@ -72,7 +72,7 @@ export function SecondaryLinkButton({
     <Link
       href={href}
       className={joinClasses(
-        "inline-flex items-center justify-center rounded-2xl border border-foreground/10 bg-white/80 px-5 py-3 text-sm font-semibold text-foreground shadow-sm transition",
+        "inline-flex min-h-11 items-center justify-center rounded-2xl border border-foreground/10 bg-white/80 px-5 py-3 text-sm font-semibold text-foreground shadow-sm transition",
         "hover:bg-white dark:border-white/10 dark:bg-white/6 dark:hover:bg-white/10",
         "focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:ring-offset-2 dark:focus:ring-offset-[#272c34]",
         className

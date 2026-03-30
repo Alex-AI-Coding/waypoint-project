@@ -1,35 +1,22 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
+import { motion, useReducedMotion } from "framer-motion";
 
-export default function PageEnter({
-  children,
-  className = "",
-}: {
-  children: ReactNode;
-  className?: string;
-}) {
-  const [entered, setEntered] = useState(false);
+export default function PageEnter({ children }: { children: ReactNode }) {
+  const reduceMotion = useReducedMotion();
 
-  useEffect(() => {
-    const id = window.requestAnimationFrame(() => {
-      setEntered(true);
-    });
-
-    return () => window.cancelAnimationFrame(id);
-  }, []);
+  if (reduceMotion) {
+    return <>{children}</>;
+  }
 
   return (
-    <div
-      className={[
-        "transition-all duration-500 ease-out motion-reduce:transition-none",
-        entered
-          ? "translate-y-0 opacity-100"
-          : "translate-y-2 opacity-0 motion-reduce:translate-y-0 motion-reduce:opacity-100",
-        className,
-      ].join(" ")}
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.28, ease: "easeOut" }}
     >
       {children}
-    </div>
+    </motion.div>
   );
 }
