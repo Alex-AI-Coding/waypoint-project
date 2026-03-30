@@ -3,14 +3,12 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-
 import TextInput from "@/components/TextInput";
 import { PrimaryButton } from "@/components/Button";
 import { createClient } from "@/lib/supabase/browser";
 
 export default function RegisterForm() {
   const router = useRouter();
-
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -46,6 +44,7 @@ export default function RegisterForm() {
         password,
         options: {
           data: { name },
+          emailRedirectTo: `${window.location.origin}/login`,
         },
       });
 
@@ -64,99 +63,86 @@ export default function RegisterForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-5">
+    <>
       {error ? (
-        <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-400/20 dark:bg-rose-500/10 dark:text-rose-200">
+        <p className="mb-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-200">
           {error}
-        </div>
+        </p>
       ) : null}
 
-      <div>
-        <label className="mb-2 block text-sm font-medium text-foreground/80">
-          Name
-        </label>
-        <TextInput
-          name="name"
-          type="text"
-          autoComplete="name"
-          placeholder="Your name"
-        />
-      </div>
-
-      <div>
-        <label className="mb-2 block text-sm font-medium text-foreground/80">
-          Email
-        </label>
-        <TextInput
-          name="email"
-          type="email"
-          autoComplete="email"
-          inputMode="email"
-          placeholder="you@example.com"
-        />
-      </div>
-
-      <div>
-        <label className="mb-2 block text-sm font-medium text-foreground/80">
-          Password
-        </label>
-
-        <div className="relative">
-          <TextInput
-            name="password"
-            type={showPassword ? "text" : "password"}
-            autoComplete="new-password"
-            placeholder="Create a password"
-            className="pr-16"
-          />
-
-          <button
-            type="button"
-            onClick={() => setShowPassword((v) => !v)}
-            className="absolute inset-y-0 right-3 my-auto h-8 rounded-lg px-2 text-xs font-medium text-green-700 transition hover:bg-green-100/60 hover:text-green-900 dark:text-green-200 dark:hover:bg-white/10 dark:hover:text-white"
-          >
-            {showPassword ? "Hide" : "Show"}
-          </button>
+      <form onSubmit={onSubmit} className="space-y-4">
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-slate-700 dark:text-slate-200">
+            Name
+          </label>
+          <TextInput name="name" placeholder="Your name" />
         </div>
-      </div>
 
-      <div>
-        <label className="mb-2 block text-sm font-medium text-foreground/80">
-          Confirm password
-        </label>
-
-        <div className="relative">
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-slate-700 dark:text-slate-200">
+            Email
+          </label>
           <TextInput
-            name="confirmPassword"
-            type={showConfirmPassword ? "text" : "password"}
-            autoComplete="new-password"
-            placeholder="Re-enter your password"
-            className="pr-16"
+            name="email"
+            type="email"
+            placeholder="you@example.com"
           />
-
-          <button
-            type="button"
-            onClick={() => setShowConfirmPassword((v) => !v)}
-            className="absolute inset-y-0 right-3 my-auto h-8 rounded-lg px-2 text-xs font-medium text-green-700 transition hover:bg-green-100/60 hover:text-green-900 dark:text-green-200 dark:hover:bg-white/10 dark:hover:text-white"
-          >
-            {showConfirmPassword ? "Hide" : "Show"}
-          </button>
         </div>
-      </div>
 
-      <PrimaryButton type="submit" disabled={isLoading} className="min-h-11 w-full">
-        {isLoading ? "Creating account..." : "Create account"}
-      </PrimaryButton>
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-slate-700 dark:text-slate-200">
+            Password
+          </label>
+          <div className="relative">
+            <TextInput
+              name="password"
+              type={showPassword ? "text" : "password"}
+              placeholder="Create a password"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((v) => !v)}
+              className="absolute inset-y-0 right-3 my-auto h-8 rounded-lg px-2 text-xs font-medium text-green-700 transition hover:bg-green-100/60 hover:text-green-900 dark:text-green-200 dark:hover:bg-white/10 dark:hover:text-white"
+            >
+              {showPassword ? "Hide" : "Show"}
+            </button>
+          </div>
+        </div>
 
-      <div className="text-sm text-foreground/68">
-        Already have an account?{" "}
-        <Link
-          href="/login"
-          className="font-medium text-emerald-700 transition hover:text-emerald-800 dark:text-emerald-300 dark:hover:text-emerald-200"
-        >
-          Login
-        </Link>
-      </div>
-    </form>
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-slate-700 dark:text-slate-200">
+            Confirm password
+          </label>
+          <div className="relative">
+            <TextInput
+              name="confirmPassword"
+              type={showConfirmPassword ? "text" : "password"}
+              placeholder="Repeat your password"
+            />
+            <button
+              type="button"
+              onClick={() => setShowConfirmPassword((v) => !v)}
+              className="absolute inset-y-0 right-3 my-auto h-8 rounded-lg px-2 text-xs font-medium text-green-700 transition hover:bg-green-100/60 hover:text-green-900 dark:text-green-200 dark:hover:bg-white/10 dark:hover:text-white"
+            >
+              {showConfirmPassword ? "Hide" : "Show"}
+            </button>
+          </div>
+        </div>
+
+        <PrimaryButton type="submit" className="w-full" disabled={isLoading}>
+          {isLoading ? "Creating account..." : "Create account"}
+        </PrimaryButton>
+
+        <p className="text-sm text-slate-600 dark:text-slate-300">
+          Already have an account?{" "}
+          <Link
+            href="/login"
+            className="font-medium text-green-700 dark:text-green-300"
+          >
+            Login
+          </Link>
+        </p>
+      </form>
+    </>
   );
 }
