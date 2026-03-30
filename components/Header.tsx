@@ -1,5 +1,4 @@
-"use client";
-
+import Image from "next/image";
 import Link from "next/link";
 
 type HeaderProps = {
@@ -20,9 +19,16 @@ export default function Header({
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0 text-center sm:text-left">
           <div className="mb-3 flex items-center justify-center gap-3 sm:justify-start">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-500/12 text-lg font-semibold text-emerald-700 shadow-inner dark:bg-emerald-400/12 dark:text-emerald-300">
-              W
+            <div className="relative h-11 w-11 overflow-hidden rounded-2xl">
+              <Image
+                src="/WaypointIcon.png"
+                alt="Waypoint icon"
+                fill
+                className="object-contain"
+                priority
+              />
             </div>
+
             <div className="min-w-0">
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-700/80 dark:text-emerald-300/80">
                 Waypoint
