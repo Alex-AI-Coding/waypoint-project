@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import { toSessionCookieOptions } from "./session-cookie";
 
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -14,16 +15,20 @@ export async function updateSession(request: NextRequest) {
         },
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value, options }) => {
+            const safeOptions = toSessionCookieOptions(value, options);
+
             request.cookies.set(name, value);
-            response.cookies.set(name, value, options);
+            response.cookies.set(
+              name,
+              value,
+              safeOptions as Parameters<typeof response.cookies.set>[2],
+            );
           });
         },
       },
-    }
+    },
   );
 
-  // This refreshes the session if needed and writes cookies.
   await supabase.auth.getUser();
-
   return response;
 }

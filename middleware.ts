@@ -1,11 +1,11 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
 import { createServerClient } from "@supabase/ssr";
+import { toSessionCookieOptions } from "@/lib/supabase/session-cookie";
 
 export async function middleware(request: NextRequest) {
   // 1) Refresh session cookies if needed
   const response = await updateSession(request);
-
   const { pathname } = request.nextUrl;
 
   // Routes
@@ -32,11 +32,17 @@ export async function middleware(request: NextRequest) {
         },
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value, options }) => {
-            response.cookies.set(name, value, options);
+            response.cookies.set(
+              name,
+              value,
+              toSessionCookieOptions(value, options) as Parameters<
+                typeof response.cookies.set
+              >[2],
+            );
           });
         },
       },
-    }
+    },
   );
 
   const { data } = await supabase.auth.getUser();
